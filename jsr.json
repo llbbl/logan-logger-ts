@@ -1,0 +1,28 @@
+{
+  "name": "@logan/logger",
+  "version": "1.0.0",
+  "description": "Universal TypeScript logging library for all JavaScript runtimes",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publish": {
+    "include": [
+      "dist",
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  "keywords": [
+    "logging",
+    "logger",
+    "typescript",
+    "universal",
+    "node",
+    "deno",
+    "bun",
+    "browser",
+    "winston"
+  ],
+  "author": "Logan Lindquist Land",
+  "license": "MIT"
+}

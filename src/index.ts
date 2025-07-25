@@ -12,8 +12,7 @@ export * from '@/utils/runtime';
 export * from '@/utils/config';
 export * from '@/utils/serialization';
 
-// Main factory function (default export)
-export { createLogger as default } from '@/core/factory';
+// Main factory function (available as named export)
 
 // Convenience exports for common use cases
 import { createLogger, createLoggerForEnvironment } from '@/core/factory';

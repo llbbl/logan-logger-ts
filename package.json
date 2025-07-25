@@ -21,7 +21,8 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish:jsr": "deno publish"
   },
   "keywords": [
     "logging",

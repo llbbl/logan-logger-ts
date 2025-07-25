@@ -118,7 +118,7 @@ async function loadDenoConfig(path: string): Promise<Partial<LoggerConfig>> {
       }
       return parsed;
     } else if (path.endsWith('.js')) {
-      const config = await import(`./${path}`);
+      const config = await import(/* @vite-ignore */ `./${path}`);
       return config.default || config;
     }
   } catch (error) {

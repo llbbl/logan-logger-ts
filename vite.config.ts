@@ -29,6 +29,7 @@ export default defineConfig({
       // External dependencies that shouldn't be bundled
       external: ['winston'],
       output: {
+        exports: 'named',
         globals: {
           winston: 'winston',
         },
