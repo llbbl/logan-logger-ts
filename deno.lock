@@ -40,12 +40,12 @@
         "npm:@types/node@20",
         "npm:@typescript-eslint/eslint-plugin@6",
         "npm:@typescript-eslint/parser@6",
-        "npm:@vitest/ui@1",
+        "npm:@vitest/ui@3",
         "npm:eslint@8",
         "npm:typescript@5",
-        "npm:vite-plugin-dts@^3.7.0",
-        "npm:vite@5",
-        "npm:vitest@1"
+        "npm:vite-plugin-dts@4",
+        "npm:vite@6",
+        "npm:vitest@3"
       ]
     }
   }

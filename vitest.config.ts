@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
   resolve: {
@@ -14,6 +19,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     include: [
       'src/**/*.{test,spec}.{js,ts}',
       'tests/**/*.{test,spec}.{js,ts}'
