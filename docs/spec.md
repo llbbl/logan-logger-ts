@@ -133,10 +133,10 @@ interface TransportConfig {
 
 ```typescript
 // Environment variables
-LOGAN_LOG_LEVEL=info
-LOGAN_LOG_FORMAT=json
-LOGAN_LOG_TIMESTAMP=true
-LOGAN_LOG_COLOR=false
+LOG_LEVEL=info
+LOG_FORMAT=json
+LOG_TIMESTAMP=true
+LOG_COLOR=false
 
 // Configuration file support
 // logan.config.json, logan.config.js

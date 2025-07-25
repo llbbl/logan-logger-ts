@@ -1,0 +1,66 @@
+{
+  "name": "logan-logger",
+  "version": "0.1.0",
+  "description": "Universal TypeScript logging library for all JavaScript runtimes",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "pnpm build:clean && pnpm build:lib",
+    "build:clean": "rm -rf dist",
+    "build:lib": "vite build",
+    "dev": "bun run src/index.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "logging",
+    "logger",
+    "typescript",
+    "universal",
+    "node",
+    "deno",
+    "bun",
+    "browser",
+    "winston"
+  ],
+  "author": "Logan Lindquist",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.7.0",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
+  },
+  "peerDependencies": {
+    "winston": "^3.8.0"
+  },
+  "peerDependenciesMeta": {
+    "winston": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
