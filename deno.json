@@ -1,4 +1,6 @@
 {
+  "name": "@logan/logger",
+  "version": "1.0.0",
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window"],
