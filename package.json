@@ -20,6 +20,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "publish:jsr": "deno publish"
@@ -35,7 +36,7 @@
     "browser",
     "winston"
   ],
-  "author": "Logan Lindquist",
+  "author": "Logan Lindquist Land",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",

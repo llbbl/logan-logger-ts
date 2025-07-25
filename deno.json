@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "test": {
+    "include": ["tests/**/*.test.ts"]
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-env",
+    "check": "deno check src/index.ts"
+  },
+  "imports": {
+    "@/": "./src/",
+    "@/core/": "./src/core/",
+    "@/utils/": "./src/utils/",
+    "@/runtime/": "./src/runtime/"
+  }
+}
