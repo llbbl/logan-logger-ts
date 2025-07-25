@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getDefaultConfig, loadConfigFromEnvironment, mergeConfigs } from '@/utils/config';
-import { stringToLogLevel, logLevelToString } from '@/core/factory';
-import { LogLevel, LoggerConfig } from '@/core/types';
+import { getDefaultConfig, loadConfigFromEnvironment, mergeConfigs, loadConfigFromFile } from '../src/utils/config.ts';
+import { stringToLogLevel, logLevelToString } from '../src/core/factory.ts';
+import { LogLevel, LoggerConfig } from '../src/core/types.ts';
 
 describe('Configuration System', () => {
   beforeEach(() => {
@@ -287,6 +287,35 @@ describe('Configuration System', () => {
       expect(typeof merged.colorize).toBe('boolean');
       expect(typeof merged.metadata).toBe('object');
       expect(Array.isArray(merged.transports)).toBe(true);
+    });
+  });
+
+  describe('loadConfigFromFile', () => {
+    it('should return empty config when no file system support', async () => {
+      // Mock runtime detection to simulate browser environment
+      vi.doMock('../src/utils/runtime', () => ({
+        detectRuntime: () => ({
+          name: 'browser',
+          capabilities: {
+            fileSystem: false
+          }
+        })
+      }));
+
+      const config = await loadConfigFromFile();
+      expect(config).toEqual({});
+    });
+
+    it('should return empty config when files do not exist', async () => {
+      // This test will naturally return empty config since config files don't exist
+      const config = await loadConfigFromFile('non-existent-config.json');
+      expect(config).toEqual({});
+    });
+
+    it('should search default config file paths', async () => {
+      // Test that the function attempts to load from default paths
+      const config = await loadConfigFromFile();
+      expect(config).toEqual({});
     });
   });
 });

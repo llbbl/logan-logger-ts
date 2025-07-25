@@ -1,5 +1,5 @@
-import { LoggerConfig, LogLevel } from '@/core/types';
-import { detectRuntime } from '@/utils/runtime';
+import { LoggerConfig, LogLevel } from '../core/types.ts';
+import { detectRuntime } from './runtime.ts';
 
 export function getDefaultConfig(): LoggerConfig {
   const runtime = detectRuntime();
@@ -60,7 +60,7 @@ export async function loadConfigFromFile(configPath?: string): Promise<Partial<L
   const possiblePaths = configPath ? [configPath] : [
     'logan.config.json',
     'logan.config.js',
-    '.loganrc.json',
+    '.loganrc',
     'package.json' // Check for logan config in package.json
   ];
   
@@ -74,7 +74,7 @@ export async function loadConfigFromFile(configPath?: string): Promise<Partial<L
         return await loadBunConfig(path);
       }
     } catch (error) {
-      // Continue to next path
+      // Continue to the next path
     }
   }
   

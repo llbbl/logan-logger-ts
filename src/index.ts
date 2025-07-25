@@ -1,22 +1,23 @@
 // Main entry point for logan-logger
-export * from '@/core/types';
-export * from '@/core/logger';
-export * from '@/core/factory';
+export * from './core/types.ts';
+export * from './core/logger.ts';
+export * from './core/factory.ts';
 
 // Runtime-specific exports
-export { NodeLogger, createMorganStream } from '@/runtime/node';
-export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from '@/runtime/browser';
+export { NodeLogger, createMorganStream } from './runtime/node.ts';
+export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
 
 // Utilities
-export * from '@/utils/runtime';
-export * from '@/utils/config';
-export * from '@/utils/serialization';
+export * from './utils/runtime.ts';
+export * from './utils/config.ts';
+export * from './utils/serialization.ts';
+export * from './utils/formatting.ts';
 
 // Main factory function (available as named export)
 
 // Convenience exports for common use cases
-import { createLogger, createLoggerForEnvironment } from '@/core/factory';
-import { LogLevel, ILogger } from '@/core/types';
+import { createLogger, createLoggerForEnvironment } from './core/factory.ts';
+import { LogLevel, ILogger } from './core/types.ts';
 
 // Pre-configured loggers for different environments
 export const logger: ILogger = createLoggerForEnvironment();
@@ -48,4 +49,4 @@ export type {
   RuntimeName,
   TransportConfig,
   ILoggerAdapter
-} from '@/core/types';
+} from './core/types.ts';

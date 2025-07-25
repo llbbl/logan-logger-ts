@@ -37,6 +37,10 @@ pnpm typecheck               # TypeScript checking
 pnpm lint                    # ESLint
 ```
 
+## Publishing Commands
+
+- Manually publish the package using `deno publish --dry-run --allow-dirty` to ensure readiness before actual publication
+
 ## Architecture Overview
 
 ### Core Design Pattern

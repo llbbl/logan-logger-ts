@@ -91,3 +91,26 @@ export function filterSensitiveData(obj: any, sensitiveKeys: string[] = ['passwo
   
   return filtered;
 }
+
+/**
+ * Serialize Error objects to plain objects for logging.
+ * @param error - The error to serialize
+ * @returns Serialized error object or original value if not an Error
+ * @example
+ * ```typescript
+ * const error = new Error('Something went wrong');
+ * const serialized = serializeError(error);
+ * // Result: { name: 'Error', message: 'Something went wrong', stack: '...' }
+ * ```
+ */
+export function serializeError(error: any): any {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...(error as any) // Include any additional properties
+    };
+  }
+  return error;
+}

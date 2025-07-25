@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NodeLogger, createMorganStream } from '@/runtime/node';
-import { LogLevel, LoggerConfig } from '@/core/types';
+import { NodeLogger, createMorganStream } from '../src/runtime/node.ts';
+import { LogLevel, LoggerConfig } from '../src/core/types.ts';
 
 describe('Node.js Logger', () => {
   beforeEach(() => {

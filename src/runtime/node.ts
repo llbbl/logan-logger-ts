@@ -1,6 +1,6 @@
-import { BaseLogger } from '@/core/logger';
-import { LogEntry, LogLevel, LoggerConfig } from '@/core/types';
-import { safeStringify } from '@/utils/serialization';
+import { BaseLogger } from '../core/logger.ts';
+import { LogEntry, LogLevel, LoggerConfig } from '../core/types.ts';
+import { safeStringify } from '../utils/serialization.ts';
 
 export class NodeLogger extends BaseLogger {
   private winston?: any;
@@ -136,7 +136,7 @@ export class NodeLogger extends BaseLogger {
 }
 
 // Create Morgan-compatible stream
-export function createMorganStream(logger: NodeLogger) {
+export function createMorganStream(logger: NodeLogger): { write: (message: string) => void } {
   return {
     write: (message: string) => {
       logger.info(message.trim());

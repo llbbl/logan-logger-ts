@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LogLevel } from '@/core/types';
-import { filterSensitiveData } from '@/utils/serialization';
+import { LogLevel } from '../src/core/types.ts';
+import { filterSensitiveData } from '../src/utils/serialization.ts';
 
 // Mock the runtime detection to control test environment
-vi.mock('@/utils/runtime', () => ({
+vi.mock('../src/utils/runtime.ts', () => ({
   detectRuntime: () => ({
     name: 'node',
     version: '20.0.0',
@@ -16,7 +16,7 @@ vi.mock('@/utils/runtime', () => ({
   })
 }));
 
-import { createLogger, createLoggerForEnvironment } from '@/index';
+import { createLogger, createLoggerForEnvironment } from '../src/index.ts';
 
 describe('Integration Tests', () => {
   beforeEach(() => {
@@ -156,7 +156,7 @@ describe('Integration Tests', () => {
 
   describe('Cross-runtime compatibility', () => {
     it.skip('should work consistently across simulated runtimes', async () => {
-      const { detectRuntime } = await import('@/utils/runtime');
+      const { detectRuntime } = await import('../src/utils/runtime.ts');
       
       const runtimes = ['node', 'browser', 'deno', 'bun'] as const;
       
@@ -407,7 +407,7 @@ describe('Integration Tests', () => {
       const logger = createLogger();
       
       // Simulate HTTP request logging
-      const requestId = 'req_' + Math.random().toString(36).substr(2, 9);
+      const requestId = 'req_' + Math.random().toString(36).substring(2, 11);
       const requestLogger = logger.child({ requestId });
       
       requestLogger.info('HTTP request started', {

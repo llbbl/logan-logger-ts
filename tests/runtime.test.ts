@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { detectRuntime, isNode, isBrowser, isDeno, isBun } from '@/utils/runtime';
+import { detectRuntime, isNode, isBrowser, isDeno, isBun } from '../src/utils/runtime.ts';
 
 describe('Runtime Detection', () => {
   beforeEach(() => {

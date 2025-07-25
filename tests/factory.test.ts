@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LogLevel, LoggerConfig } from '@/core/types';
+import { LogLevel, LoggerConfig } from '../src/core/types.ts';
 
 // Mock the runtime detection to control test environment
-vi.mock('@/utils/runtime', () => ({
+vi.mock('../src/utils/runtime.ts', () => ({
   detectRuntime: () => ({
     name: 'node',
     version: '20.0.0',
@@ -15,7 +15,7 @@ vi.mock('@/utils/runtime', () => ({
   })
 }));
 
-import { LoggerFactory, createLogger, createLoggerForEnvironment, stringToLogLevel, logLevelToString } from '@/core/factory';
+import { LoggerFactory, createLogger, createLoggerForEnvironment, stringToLogLevel, logLevelToString } from '../src/core/factory.ts';
 
 describe('Logger Factory', () => {
   beforeEach(() => {

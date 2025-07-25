@@ -1,8 +1,8 @@
-import { ILogger, LoggerConfig, LogLevel } from '@/core/types';
-import { detectRuntime } from '@/utils/runtime';
-import { NodeLogger } from '@/runtime/node';
-import { BrowserLogger } from '@/runtime/browser';
-import { getDefaultConfig } from '@/utils/config';
+import { ILogger, LoggerConfig, LogLevel } from './types.ts';
+import { detectRuntime } from '../utils/runtime.ts';
+import { NodeLogger } from '../runtime/node.ts';
+import { BrowserLogger } from '../runtime/browser.ts';
+import { getDefaultConfig } from '../utils/config.ts';
 
 /**
  * Factory class for creating logger instances based on the detected runtime.

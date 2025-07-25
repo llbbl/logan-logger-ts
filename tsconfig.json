@@ -24,15 +24,8 @@
     "isolatedModules": true,
     "noEmit": false,
     "sourceMap": true,
-    "types": ["node", "vitest/globals"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@/core/*": ["src/core/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/runtime/*": ["src/runtime/*"],
-      "@/formatters/*": ["src/formatters/*"]
-    }
+    "allowImportingTsExtensions": true,
+    "types": ["node", "vitest/globals"]
   },
   "include": [
     "src/**/*"

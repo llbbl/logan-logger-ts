@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from '@/runtime/browser.js';
-import { LogLevel, LoggerConfig } from '@/core/types.js';
+import { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from '../src/runtime/browser.ts';
+import { LogLevel, LoggerConfig } from '../src/core/types.ts';
 
 describe('Browser Logger', () => {
   beforeEach(() => {
@@ -294,22 +294,24 @@ describe('Browser Logger', () => {
     it('should track group stack', () => {
       const logger = new ConsoleGroupLogger();
       
-      // Access private property for testing
-      const getGroupStack = () => (logger as any).groupStack;
-      
-      expect(getGroupStack()).toEqual([]);
+      expect(logger.getCurrentGroupStack()).toEqual([]);
+      expect(logger.getCurrentGroupPath()).toBe('');
       
       logger.group('Group 1');
-      expect(getGroupStack()).toEqual(['Group 1']);
+      expect(logger.getCurrentGroupStack()).toEqual(['Group 1']);
+      expect(logger.getCurrentGroupPath()).toBe('Group 1');
       
       logger.groupCollapsed('Group 2');
-      expect(getGroupStack()).toEqual(['Group 1', 'Group 2']);
+      expect(logger.getCurrentGroupStack()).toEqual(['Group 1', 'Group 2']);
+      expect(logger.getCurrentGroupPath()).toBe('Group 1 > Group 2');
       
       logger.groupEnd();
-      expect(getGroupStack()).toEqual(['Group 1']);
+      expect(logger.getCurrentGroupStack()).toEqual(['Group 1']);
+      expect(logger.getCurrentGroupPath()).toBe('Group 1');
       
       logger.groupEnd();
-      expect(getGroupStack()).toEqual([]);
+      expect(logger.getCurrentGroupStack()).toEqual([]);
+      expect(logger.getCurrentGroupPath()).toBe('');
     });
   });
 

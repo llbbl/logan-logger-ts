@@ -1,4 +1,4 @@
-import { RuntimeInfo, RuntimeName, RuntimeCapabilities } from '@/core/types';
+import { RuntimeInfo, RuntimeName, RuntimeCapabilities } from '../core/types.ts';
 
 /**
  * Detects the current JavaScript runtime environment and its capabilities.

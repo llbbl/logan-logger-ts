@@ -17,13 +17,13 @@
     "build:clean": "rm -rf dist",
     "build:lib": "vite build",
     "dev": "bun run src/index.ts",
-    "test": "vitest",
+    "test": "vitest run --reporter=default",
+    "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run --reporter=default",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "publish:jsr": "deno publish --no-check --allow-slow-types"
+    "publish:jsr": "deno publish"
   },
   "keywords": [
     "logging",

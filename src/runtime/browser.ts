@@ -1,6 +1,6 @@
-import { BaseLogger } from '@/core/logger';
-import { LogEntry, LogLevel, LoggerConfig } from '@/core/types';
-import { safeStringify } from '@/utils/serialization';
+import { BaseLogger } from '../core/logger.ts';
+import { LogEntry, LogLevel, LoggerConfig } from '../core/types.ts';
+import { safeStringify } from '../utils/serialization.ts';
 
 export class BrowserLogger extends BaseLogger {
   constructor(config: Partial<LoggerConfig> = {}) {
@@ -101,6 +101,14 @@ export class ConsoleGroupLogger extends BrowserLogger {
   groupEnd(): void {
     console.groupEnd();
     this.groupStack.pop();
+  }
+
+  getCurrentGroupStack(): string[] {
+    return [...this.groupStack];
+  }
+
+  getCurrentGroupPath(): string {
+    return this.groupStack.join(' > ');
   }
 
   time(label: string): void {

@@ -1,7 +1,7 @@
 // Bun-specific test file
 // @ts-ignore - Bun test framework import
 import { describe, it, expect } from 'bun:test';
-import { createLogger, LogLevel } from '@/index';
+import { createLogger, LogLevel } from '../src/index.ts';
 
 describe('Bun Runtime Tests', () => {
   it('should create a logger in Bun', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createLogger, createLoggerForEnvironment, LogLevel } from '@/index';
+import { createLogger, createLoggerForEnvironment, LogLevel } from '../src/index.ts';
 
 describe('Logger', () => {
   beforeEach(() => {

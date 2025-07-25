@@ -30,7 +30,9 @@
     "prefer-const": "error",
     "no-var": "error",
     "object-shorthand": "error",
-    "prefer-arrow-callback": "error"
+    "prefer-arrow-callback": "error",
+    "import/no-useless-path-segments": "off",
+    "import/prefer-default-export": "off"
   },
   "ignorePatterns": [
     "dist/",

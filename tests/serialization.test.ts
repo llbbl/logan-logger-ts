@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { safeStringify, filterSensitiveData } from '@/utils/serialization';
+import { describe, expect, it } from 'vitest';
+import { filterSensitiveData, safeStringify, serializeError } from '../src/utils/serialization.ts';
 
 describe('Serialization Utilities', () => {
   describe('safeStringify', () => {
@@ -87,8 +87,7 @@ describe('Serialization Utilities', () => {
 
     it('should handle nested circular references', () => {
       const parent: any = { name: 'parent' };
-      const child: any = { name: 'child', parent };
-      parent.child = child;
+      parent.child = { name: 'child', parent };
       
       const result = safeStringify(parent);
       expect(result).toContain('"name":"parent"');
@@ -117,7 +116,7 @@ describe('Serialization Utilities', () => {
         username: 'john',
         password: 'secret123',
         token: 'abc123',
-        secret: 'mysecret',
+        secret: 'my-secret',
         apiKey: 'key123',
         auth: 'bearer token'
       };
@@ -150,7 +149,7 @@ describe('Serialization Utilities', () => {
       const data = {
         PASSWORD: 'secret123',
         Token: 'abc123',
-        SECRET_KEY: 'mysecret'
+        SECRET_KEY: 'my-secret'
       };
       
       const filtered = filterSensitiveData(data);
@@ -233,6 +232,69 @@ describe('Serialization Utilities', () => {
       expect(filtered.level1.level2.data).toBe('normal');
       expect(typeof filtered.level1).toBe('object');
       expect(typeof filtered.level1.level2).toBe('object');
+    });
+  });
+
+  describe('serializeError', () => {
+    it('should serialize Error objects correctly', () => {
+      const error = new Error('Test error message');
+      error.stack = 'Error: Test error message\n    at test (file.js:1:1)';
+      
+      const serialized = serializeError(error);
+      
+      expect(serialized).toEqual({
+        name: 'Error',
+        message: 'Test error message',
+        stack: 'Error: Test error message\n    at test (file.js:1:1)'
+      });
+    });
+
+    it('should handle custom error properties', () => {
+      const error = new Error('Custom error') as any;
+      error.code = 'CUSTOM_ERROR';
+      error.statusCode = 500;
+      
+      const serialized = serializeError(error);
+      
+      expect(serialized.name).toBe('Error');
+      expect(serialized.message).toBe('Custom error');
+      expect(serialized.code).toBe('CUSTOM_ERROR');
+      expect(serialized.statusCode).toBe(500);
+      expect(serialized.stack).toBeDefined();
+    });
+
+    it('should handle different error types', () => {
+      const typeError = new TypeError('Type error');
+      const rangeError = new RangeError('Range error');
+      
+      const serializedType = serializeError(typeError);
+      const serializedRange = serializeError(rangeError);
+      
+      expect(serializedType.name).toBe('TypeError');
+      expect(serializedType.message).toBe('Type error');
+      
+      expect(serializedRange.name).toBe('RangeError');
+      expect(serializedRange.message).toBe('Range error');
+    });
+
+    it('should return non-Error values unchanged', () => {
+      expect(serializeError('string')).toBe('string');
+      expect(serializeError(123)).toBe(123);
+      expect(serializeError({ key: 'value' })).toEqual({ key: 'value' });
+      expect(serializeError(null)).toBe(null);
+      expect(serializeError(undefined)).toBe(undefined);
+    });
+
+    it('should handle Error-like objects', () => {
+      const errorLike = {
+        name: 'CustomError',
+        message: 'Custom message',
+        stack: 'stack trace'
+      };
+      
+      const serialized = serializeError(errorLike);
+      
+      expect(serialized).toEqual(errorLike);
     });
   });
 });

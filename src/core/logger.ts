@@ -5,9 +5,8 @@ import {
   LogEntry,
   RuntimeName,
   LoggerConfig 
-} from '@/core/types';
-import { detectRuntime } from '@/utils/runtime';
-import { safeStringify } from '@/utils/serialization';
+} from './types.ts';
+import { detectRuntime } from '../utils/runtime.ts';
 
 export abstract class BaseLogger implements ILogger {
   protected level: LogLevel;
@@ -15,7 +14,7 @@ export abstract class BaseLogger implements ILogger {
   protected runtime: RuntimeName;
   protected childMetadata: Record<string, any> = {};
 
-  constructor(config: Partial<LoggerConfig> = {}) {
+  protected constructor(config: Partial<LoggerConfig> = {}) {
     this.config = config;
     this.level = config.level ?? LogLevel.INFO;
     this.runtime = detectRuntime().name;
@@ -78,33 +77,3 @@ export abstract class BaseLogger implements ILogger {
   protected abstract createChild(): BaseLogger;
 }
 
-export function serializeError(error: any): any {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      ...(error as any) // Include any additional properties
-    };
-  }
-  return error;
-}
-
-export function formatLogEntry(entry: LogEntry, format: 'json' | 'text' = 'text'): string {
-  if (format === 'json') {
-    return safeStringify({
-      timestamp: entry.timestamp.toISOString(),
-      level: LogLevel[entry.level].toLowerCase(),
-      message: entry.message,
-      metadata: entry.metadata,
-      runtime: entry.runtime
-    });
-  }
-
-  // Text format
-  const timestamp = entry.timestamp.toISOString();
-  const level = LogLevel[entry.level].toUpperCase();
-  const metaStr = entry.metadata ? ` ${safeStringify(entry.metadata)}` : '';
-  
-  return `[${timestamp}] ${level}: ${entry.message}${metaStr}`;
-}

@@ -4,7 +4,7 @@
   "exports": "./src/index.ts",
   "compilerOptions": {
     "allowJs": true,
-    "lib": ["deno.window"],
+    "lib": ["deno.window", "dom"],
     "strict": true
   },
   "test": {
@@ -13,11 +13,5 @@
   "tasks": {
     "test": "deno test --allow-read --allow-env",
     "check": "deno check src/index.ts"
-  },
-  "imports": {
-    "@/": "./src/",
-    "@/core/": "./src/core/",
-    "@/utils/": "./src/utils/",
-    "@/runtime/": "./src/runtime/"
   }
 }
