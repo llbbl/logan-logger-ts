@@ -16,17 +16,17 @@ export * from '@/utils/serialization';
 
 // Convenience exports for common use cases
 import { createLogger, createLoggerForEnvironment } from '@/core/factory';
-import { LogLevel } from '@/core/types';
+import { LogLevel, ILogger } from '@/core/types';
 
 // Pre-configured loggers for different environments
-export const logger = createLoggerForEnvironment();
+export const logger: ILogger = createLoggerForEnvironment();
 
 // Legacy compatibility - matches your existing client/server code
 export const log = {
-  debug: (message: string, meta?: any) => logger.debug(message, meta),
-  info: (message: string, meta?: any) => logger.info(message, meta),
-  warn: (message: string, meta?: any) => logger.warn(message, meta),
-  error: (message: string, meta?: any) => logger.error(message, meta),
+  debug: (message: string, meta?: any): void => logger.debug(message, meta),
+  info: (message: string, meta?: any): void => logger.info(message, meta),
+  warn: (message: string, meta?: any): void => logger.warn(message, meta),
+  error: (message: string, meta?: any): void => logger.error(message, meta),
 };
 
 // Named exports for explicit imports

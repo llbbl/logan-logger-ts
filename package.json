@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "publish:jsr": "deno publish"
+    "publish:jsr": "deno publish --no-check"
   },
   "keywords": [
     "logging",
