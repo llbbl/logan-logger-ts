@@ -1,0 +1,95 @@
+# Logan Logger - Coding Rules and Conventions
+
+## TypeScript Standards
+- Use strict TypeScript configuration (as defined in tsconfig.json)
+- Prefer explicit type annotations for public APIs
+- Use enums for constants (e.g., LogLevel)
+- Always export interfaces and types that may be used externally
+- Use generic types for flexible, reusable components
+
+## Code Organization
+- Follow the established directory structure: core/, runtime/, utils/
+- Place all type definitions in src/core/types.ts
+- Runtime-specific implementations go in src/runtime/
+- Utility functions go in src/utils/
+- Use barrel exports in index.ts files
+
+## Naming Conventions
+- Interfaces: PascalCase with 'I' prefix (e.g., ILogger)
+- Classes: PascalCase (e.g., NodeLogger, BrowserLogger)
+- Functions: camelCase (e.g., createLogger, detectRuntime)
+- Constants: SCREAMING_SNAKE_CASE for module-level constants
+- Files: kebab-case for multi-word files (e.g., runtime-detection.ts)
+
+## Design Patterns
+- Use Factory pattern for logger creation (createLogger, createLoggerForEnvironment)
+- Use Adapter pattern for runtime-specific implementations
+- Implement lazy evaluation for performance-critical operations
+- Support method chaining where appropriate
+
+## Performance Guidelines
+- Use lazy evaluation for expensive operations (functions as log messages)
+- Minimize memory allocations in hot paths
+- Avoid creating objects unnecessarily in log methods
+- Cache runtime detection results
+- Use efficient serialization for complex objects
+
+## Error Handling
+- Never throw errors from logging operations
+- Gracefully degrade when features aren't available
+- Use try-catch blocks around external dependencies
+- Provide meaningful fallbacks for missing capabilities
+
+## Runtime Compatibility
+- Always check runtime capabilities before using features
+- Provide graceful fallbacks for unsupported operations
+- Test all code paths across different runtimes
+- Document runtime-specific behavior in code comments
+
+## Testing Requirements
+- Write tests for all public APIs
+- Test error conditions and edge cases
+- Include performance benchmarks for critical paths
+- Test across multiple runtime environments
+- Use descriptive test names that explain the scenario
+
+## Documentation Standards
+- Use JSDoc comments for all public APIs
+- Include usage examples in documentation
+- Document runtime-specific behavior
+- Explain performance implications where relevant
+- Keep README.md updated with new features
+
+## Import/Export Patterns
+- Use path aliases defined in tsconfig.json (@/core, @/utils, etc.)
+- Prefer named exports over default exports
+- Group imports: external dependencies, then internal modules
+- Use barrel exports for clean public APIs
+
+## Environment Configuration
+- Support environment variables for configuration
+- Provide sensible defaults for all settings
+- Validate configuration values
+- Document all environment variables
+
+## Code Quality
+- Run ESLint and fix all warnings
+- Ensure TypeScript compilation without errors
+- Maintain test coverage above 80%
+- Use consistent formatting (prettier/ESLint rules)
+- Follow the principle of least surprise
+
+## Git Conventions
+- Use conventional commit messages
+- Keep commits focused and atomic
+- Write clear commit messages explaining the "why"
+- Tag releases following semantic versioning
+
+## Specific to Logan Logger
+- Maintain the universal runtime promise - all features should work across runtimes
+- Prioritize performance in logging hot paths
+- Keep the core API stable and minimal
+- Use the factory pattern for creating different logger types
+- Support child loggers with context inheritance
+- Handle circular references in object serialization
+- Filter sensitive data automatically (passwords, keys, tokens)

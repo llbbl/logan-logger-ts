@@ -1,0 +1,50 @@
+# Logan Logger - Universal TypeScript Logging Library
+
+You are working on Logan Logger, a universal TypeScript logging library that supports Node.js, Deno, Bun, browsers, and WebAssembly environments.
+
+## Project Architecture
+- **Factory + Adapter Pattern**: Runtime detection with optimized implementations
+- **Core Module**: Interfaces and factory logic in `src/core/`
+- **Runtime Adapters**: Specific implementations in `src/runtime/`
+- **Utilities**: Helper functions in `src/utils/`
+
+## Key Design Principles
+1. **Universal Compatibility**: All features must work across JavaScript runtimes
+2. **Performance First**: Lazy evaluation, zero-allocation logging
+3. **Type Safety**: Full TypeScript support with strict configuration
+4. **Zero Dependencies**: Core functionality requires no external dependencies
+5. **Graceful Degradation**: Fallbacks when features aren't available
+
+## Code Style
+- Use TypeScript strict mode
+- Interfaces with 'I' prefix (ILogger)
+- Enum for constants (LogLevel)
+- Path aliases: @/core, @/utils, @/runtime
+- camelCase for functions, PascalCase for classes
+- Never throw errors from logging operations
+
+## Key Patterns
+```typescript
+// Factory pattern for logger creation
+const logger = createLogger({ level: LogLevel.DEBUG });
+
+// Lazy evaluation for performance
+logger.debug(() => `Expensive: ${heavyComputation()}`);
+
+// Child loggers with context
+const childLogger = logger.child({ requestId: 'req-123' });
+```
+
+## Testing
+- Use Vitest for all tests
+- Test across multiple runtimes
+- Include performance benchmarks
+- Maintain 80%+ test coverage
+
+## Build Tools
+- Vite for building and bundling
+- pnpm for package management
+- ESLint for code quality
+- TypeScript for compilation
+
+When working on this project, prioritize performance, universal compatibility, and maintain the established architectural patterns.
