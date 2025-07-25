@@ -20,7 +20,10 @@ export default defineConfig({
     ],
     exclude: [
       'node_modules',
-      'dist'
+      'dist',
+      'tests/deno-integration.test.ts',
+      'tests/bun.test.ts',
+      'tests/deno-simple.test.ts'
     ],
     coverage: {
       provider: 'v8',

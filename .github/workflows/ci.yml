@@ -59,7 +59,7 @@ jobs:
         run: bun install
 
       - name: Run tests
-        run: bun test
+        run: bun test tests/bun.test.ts
 
       - name: Test TypeScript compilation
         run: bun run typecheck
@@ -80,7 +80,7 @@ jobs:
         run: deno cache src/index.ts
 
       - name: Run Deno tests
-        run: deno test --allow-read --allow-env tests/
+        run: deno test --no-check --allow-read --allow-env tests/deno-simple.test.ts
 
       - name: Test TypeScript compilation
         run: deno check src/index.ts

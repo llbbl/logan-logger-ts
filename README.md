@@ -1,6 +1,6 @@
 # Logan Logger
 
-[![CI](https://github.com/YOUR_USERNAME/logan-logger-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/logan-logger-ts/actions/workflows/ci.yml)
+[![CI](https://github.com/llbbl/logan-logger-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/llbbl/logan-logger-ts/actions/workflows/ci.yml)
 [![JSR](https://jsr.io/badges/@logan/logger)](https://jsr.io/@logan/logger)
 
 A universal TypeScript logging library that works consistently across all JavaScript runtimes: Node.js, Deno, Bun, browsers, and WebAssembly environments.
@@ -242,4 +242,4 @@ MIT License - see LICENSE file for details.
 
 ## Credits
 
-Created by Logan Lindquist
+Created by Logan Lindquist Land
