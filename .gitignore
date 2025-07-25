@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+# Lockfiles are intentionally not ignored - they should be committed for package publishing
+# This includes package-lock.json, yarn.lock, and pnpm-lock.yaml
+
 
 # Build outputs
 dist/
