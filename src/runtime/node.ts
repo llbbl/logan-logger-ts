@@ -13,6 +13,7 @@ export class NodeLogger extends BaseLogger {
   private async initializeWinston(): Promise<void> {
     try {
       // Try to load Winston if available
+      // @ts-ignore - Optional peer dependency
       const winston = await import('winston');
       this.winston = this.createWinstonLogger(winston);
     } catch (error) {

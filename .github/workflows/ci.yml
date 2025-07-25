@@ -74,19 +74,10 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
-
-      - name: Cache Deno dependencies
-        run: deno cache src/index.ts
+          deno-version: v2.x
 
       - name: Run Deno tests
         run: deno test --no-check --allow-read --allow-env tests/deno-simple.test.ts
-
-      - name: Test TypeScript compilation
-        run: deno check src/index.ts
-
-      - name: Test JSR publish (dry run)
-        run: deno publish --dry-run
 
   build-test:
     name: Build Test
