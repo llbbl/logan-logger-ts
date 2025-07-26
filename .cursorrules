@@ -33,6 +33,13 @@ logger.debug(() => `Expensive: ${heavyComputation()}`);
 
 // Child loggers with context
 const childLogger = logger.child({ requestId: 'req-123' });
+
+// Runtime-specific imports (v1.1.0+)
+import { createLogger } from '@logan/logger';                                  // Auto-detection
+import { NodeLogger, createMorganStream } from '@logan/logger/node';           // Node.js
+import { BrowserLogger, PerformanceLogger } from '@logan/logger/browser';      // Browser
+import { createLogger } from '@logan/logger/deno';                             // Deno
+import { createLogger, NodeLogger } from '@logan/logger/bun';                  // Bun
 ```
 
 ## Testing

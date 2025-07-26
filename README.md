@@ -19,17 +19,17 @@ A universal TypeScript logging library that works consistently across all JavaSc
 ## Quick Start
 
 ```bash
-npm install logan-logger
+npm install @logan/logger
 # or
-pnpm add logan-logger
+pnpm add @logan/logger
 # or
-yarn add logan-logger
+yarn add @logan/logger
 ```
 
 ### Basic Usage
 
 ```typescript
-import { createLogger, LogLevel } from 'logan-logger';
+import { createLogger, LogLevel } from '@logan/logger';
 
 // Create logger with automatic environment configuration
 const logger = createLogger({
@@ -61,7 +61,7 @@ logger.debug(() => `Expensive computation: ${computeHeavyValue()}`);
 
 #### Environment-Based Configuration
 ```typescript
-import { createLoggerForEnvironment } from 'logan-logger';
+import { createLoggerForEnvironment } from '@logan/logger';
 
 // Automatically configures based on NODE_ENV
 const logger = createLoggerForEnvironment();
@@ -70,11 +70,13 @@ const logger = createLoggerForEnvironment();
 // Test: WARN level
 ```
 
-#### Runtime-Specific Features
+#### Runtime-Specific Imports
 
-**Node.js with Winston:**
+Logan Logger provides runtime-specific entry points for optimal bundling and type safety:
+
+**🟢 Node.js with Winston Support:**
 ```typescript
-import { NodeLogger, createMorganStream } from 'logan-logger';
+import { createLogger, NodeLogger, createMorganStream } from '@logan/logger/node';
 
 const logger = new NodeLogger({
   transports: [
@@ -86,9 +88,9 @@ const logger = new NodeLogger({
 app.use(morgan('combined', { stream: createMorganStream(logger) }));
 ```
 
-**Browser with Performance:**
+**🌐 Browser-Optimized (Webpack/Vite-Safe):**
 ```typescript
-import { PerformanceLogger } from 'logan-logger';
+import { createLogger, BrowserLogger, PerformanceLogger } from '@logan/logger/browser';
 
 const logger = new PerformanceLogger();
 
@@ -97,9 +99,33 @@ logger.mark('api-start');
 logger.measure('api-duration', 'api-start');
 ```
 
+**🦕 Deno-Optimized:**
+```typescript
+import { createLogger, BrowserLogger } from '@logan/logger/deno';
+
+const logger = createLogger({ colorize: true });
+logger.info('Deno application started');
+```
+
+**🥟 Bun-Optimized:**
+```typescript
+import { createLogger, NodeLogger } from '@logan/logger/bun';
+
+const logger = createLogger({ level: LogLevel.DEBUG });
+logger.info('Bun application started');
+```
+
+**🔧 Auto-Detection (Generic):**
+```typescript
+import { createLogger } from '@logan/logger';
+
+// Automatically selects appropriate logger based on runtime
+const logger = createLogger();
+```
+
 #### Safe Data Handling
 ```typescript
-import { filterSensitiveData } from 'logan-logger';
+import { filterSensitiveData } from '@logan/logger';
 
 const userData = {
   name: 'John Doe',
@@ -113,16 +139,16 @@ logger.info('User processed', safeData);
 // Logs: { name: 'John Doe', email: 'john@example.com', password: '[REDACTED]', apiKey: '[REDACTED]' }
 ```
 
-## Runtime Support
+## Runtime Support & Import Paths
 
-| Runtime | Status | Implementation | Features |
-|---------|--------|----------------|----------|
-| Node.js 20+ | ✅ Full | Winston + Console | File logging, transports, Morgan integration |
-| Bun | ✅ Full | Node.js adapter | Same as Node.js |
-| Browser | ✅ Full | Console API | CSS styling, performance marks, grouping |
-| Deno | ✅ Basic | Console adapter | Console logging (native implementation planned) |
-| WebWorker | ✅ Basic | Console adapter | Basic console logging |
-| WebAssembly | ✅ Basic | Console adapter | Message passing to host |
+| Runtime | Import Path | Status | Implementation | Features |
+|---------|-------------|--------|----------------|----------|
+| Node.js 20+ | `@logan/logger/node` | ✅ Full | Winston + Console | File logging, transports, Morgan integration |
+| Bun | `@logan/logger/bun` | ✅ Full | NodeLogger adapter | Same as Node.js |
+| Browser | `@logan/logger/browser` | ✅ Full | Console API | CSS styling, performance marks, grouping |
+| Deno | `@logan/logger/deno` | ✅ Basic | BrowserLogger adapter | Console logging (native implementation planned) |
+| WebWorker | `@logan/logger/browser` | ✅ Basic | Console adapter | Basic console logging |
+| Auto-detect | `@logan/logger` | ✅ Basic | Runtime detection | Automatic adapter selection |
 
 ## Configuration
 

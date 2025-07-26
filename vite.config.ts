@@ -20,10 +20,16 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        node: resolve(__dirname, 'src/node.ts'),
+        deno: resolve(__dirname, 'src/deno.ts'),
+        bun: resolve(__dirname, 'src/bun.ts'),
+        browser: resolve(__dirname, 'src/browser.ts'),
+      },
       name: 'LoganLogger',
       formats: ['es', 'cjs'],
-      fileName: (format) => `index.${format === 'es' ? 'esm.js' : 'js'}`,
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'esm.js' : 'js'}`,
     },
     rollupOptions: {
       // External dependencies that shouldn't be bundled

@@ -2,7 +2,10 @@
 
 ## Overview
 
-Logan Logger is a universal TypeScript logging library designed to provide consistent logging functionality across all JavaScript runtimes including Node.js, Deno, Bun, browsers, and WebAssembly environments. The library prioritizes minimal dependencies, runtime adaptability, and a unified API surface.
+Logan Logger (`@logan/logger`) is a universal TypeScript logging library designed to provide consistent logging functionality across all JavaScript runtimes including Node.js, Deno, Bun, browsers, and WebAssembly environments. The library prioritizes minimal dependencies, runtime adaptability, and a unified API surface.
+
+**Package Name:** `@logan/logger`  
+**Runtime-Specific Imports:** Available via dedicated entry points (`/node`, `/browser`, `/deno`, `/bun`)
 
 ## Design Principles
 

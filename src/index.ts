@@ -3,8 +3,7 @@ export * from './core/types.ts';
 export * from './core/logger.ts';
 export * from './core/factory.ts';
 
-// Runtime-specific exports
-export { NodeLogger, createMorganStream } from './runtime/node.ts';
+// Runtime-specific exports  
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
 
 // Utilities

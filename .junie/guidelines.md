@@ -111,6 +111,27 @@ The library is designed to work across multiple JavaScript runtimes:
 - Browser: Supported via BrowserLogger implementation
 - WebWorker: Supported via BrowserLogger implementation
 
+#### Runtime-Specific Imports
+
+Version 1.1.0+ provides dedicated entry points for optimal bundling and type safety:
+
+```typescript
+// Main entry - auto-detection (generic)
+import { createLogger } from '@logan/logger';
+
+// Runtime-specific imports (recommended)
+import { NodeLogger, createMorganStream } from '@logan/logger/node';     // Node.js + Winston
+import { BrowserLogger, PerformanceLogger } from '@logan/logger/browser'; // Browser-optimized
+import { createLogger } from '@logan/logger/deno';                        // Deno-optimized  
+import { createLogger, NodeLogger } from '@logan/logger/bun';             // Bun-optimized
+```
+
+Benefits:
+- **Webpack/Vite Safe**: Browser builds exclude Winston dependencies completely
+- **Tree-shaking**: Only bundle what each runtime needs
+- **Type Safety**: TypeScript knows exactly which features are available
+- **Explicit**: Clear about which logger implementation you're getting
+
 #### Key Design Patterns
 
 1. **Factory Pattern**: `LoggerFactory` creates the appropriate logger for the current runtime
@@ -142,9 +163,10 @@ The library is designed to work across multiple JavaScript runtimes:
 #### Build Output
 
 The build process generates:
-- CommonJS module (index.js)
-- ES module (index.esm.js)
-- TypeScript declarations (index.d.ts)
+- Multiple entry points for different runtimes (index, node, browser, deno, bun)
+- CommonJS module (*.js) for each entry point
+- ES module (*.esm.js) for each entry point
+- TypeScript declarations (*.d.ts) for each entry point
 
 #### Code Style and Conventions
 

@@ -1,6 +1,6 @@
 {
-  "name": "logan-logger",
-  "version": "1.0.2",
+  "name": "@logan/logger",
+  "version": "1.1.0",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -8,8 +8,28 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
+      "import": "./dist/index.esm.js", 
       "require": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.esm.js",
+      "require": "./dist/node.js"
+    },
+    "./deno": {
+      "types": "./dist/deno.d.ts",
+      "import": "./dist/deno.esm.js",
+      "require": "./dist/deno.js"
+    },
+    "./bun": {
+      "types": "./dist/bun.d.ts",
+      "import": "./dist/bun.esm.js",
+      "require": "./dist/bun.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.esm.js",
+      "require": "./dist/browser.js"
     }
   },
   "scripts": {

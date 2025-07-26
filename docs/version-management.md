@@ -1,6 +1,6 @@
-# Version Management for logan-logger-ts
+# Version Management for @logan/logger
 
-This document explains how version management is handled in the logan-logger-ts project. This project uses a centralized version management approach where `package.json` serves as the single source of truth for the package version, eliminating the need to maintain version numbers in multiple configuration files.
+This document explains how version management is handled in the @logan/logger project. This project uses a centralized version management approach where `package.json` serves as the single source of truth for the package version, eliminating the need to maintain version numbers in multiple configuration files.
 
 ## Implementation
 

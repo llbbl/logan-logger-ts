@@ -65,6 +65,17 @@
 - Prefer named exports over default exports
 - Group imports: external dependencies, then internal modules
 - Use barrel exports for clean public APIs
+- Use runtime-specific entry points for optimal bundling:
+  ```typescript
+  // Main entry - auto-detection
+  import { createLogger } from '@logan/logger';
+  
+  // Runtime-specific imports (recommended)
+  import { NodeLogger } from '@logan/logger/node';
+  import { BrowserLogger } from '@logan/logger/browser';
+  import { createLogger } from '@logan/logger/deno';
+  import { createLogger } from '@logan/logger/bun';
+  ```
 
 ## Environment Configuration
 - Support environment variables for configuration

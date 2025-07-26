@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Logan Logger TypeScript
 
-Logan Logger is a universal TypeScript logging library designed for all JavaScript runtimes (Node.js, Deno, Bun, browsers, WebAssembly). It provides a unified API with runtime-specific adapters and zero dependencies for core functionality.
+Logan Logger (`@logan/logger`) is a universal TypeScript logging library designed for all JavaScript runtimes (Node.js, Deno, Bun, browsers, WebAssembly). It provides a unified API with runtime-specific adapters and zero dependencies for core functionality.
+
+**Package Name:** `@logan/logger`  
+**Version:** 1.1.0+  
+**Runtime-Specific Imports:** Available via dedicated entry points for optimal bundling
 
 ## Development Commands
 
@@ -40,6 +44,8 @@ pnpm lint                    # ESLint
 ## Publishing Commands
 
 - Manually publish the package using `deno publish --dry-run --allow-dirty` to ensure readiness before actual publication
+- Package published as `@logan/logger` (scoped package)
+- Version 1.1.0+ includes runtime-specific entry points
 
 ## Architecture Overview
 
@@ -83,6 +89,26 @@ import { NodeLogger } from '@/runtime/node.js';
 import { safeStringify } from '@/utils/serialization.js';
 ```
 
+### Runtime-Specific Entry Points
+Version 1.1.0+ provides dedicated entry points for optimal bundling and type safety:
+
+```typescript
+// Main entry - auto-detection (generic)
+import { createLogger } from '@logan/logger';
+
+// Runtime-specific imports (recommended)
+import { NodeLogger, createMorganStream } from '@logan/logger/node';     // Node.js + Winston
+import { BrowserLogger, PerformanceLogger } from '@logan/logger/browser'; // Browser-optimized
+import { createLogger } from '@logan/logger/deno';                        // Deno-optimized  
+import { createLogger, NodeLogger } from '@logan/logger/bun';             // Bun-optimized
+```
+
+**Benefits:**
+- **Webpack/Vite Safe**: Browser builds exclude Winston dependencies completely
+- **Tree-shaking**: Only bundle what each runtime needs
+- **Type Safety**: TypeScript knows exactly which features are available
+- **Explicit**: Clear about which logger implementation you're getting
+
 ### Configuration Strategy
 - **Environment-based**: `createLoggerForEnvironment()` auto-configures based on NODE_ENV
 - **Manual**: `createLogger(config)` for explicit configuration
@@ -115,6 +141,8 @@ Winston is an optional peer dependency:
 
 ## Build and Distribution
 - **Vite** for building with TypeScript declaration generation
-- **Dual packages**: ESM (`index.esm.js`) and CJS (`index.js`)
-- **TypeScript declarations**: Full type support with declaration maps
-- **Tree-shaking friendly**: Type-only exports and proper module structure
+- **Multiple entry points**: `index`, `node`, `browser`, `deno`, `bun`
+- **Dual packages**: ESM (`.esm.js`) and CJS (`.js`) for each entry point
+- **TypeScript declarations**: Full type support with declaration maps for each runtime
+- **Tree-shaking friendly**: Runtime-specific exports and proper module structure
+- **Webpack/bundler safe**: Browser entry points exclude Node.js dependencies
