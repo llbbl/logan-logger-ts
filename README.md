@@ -1,6 +1,7 @@
 # Logan Logger
 
 [![CI](https://github.com/llbbl/logan-logger-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/llbbl/logan-logger-ts/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@logan/logger)](https://www.npmjs.com/package/@logan/logger)
 [![JSR](https://jsr.io/badges/@logan/logger)](https://jsr.io/@logan/logger)
 
 A universal TypeScript logging library that works consistently across all JavaScript runtimes: Node.js, Deno, Bun, browsers, and WebAssembly environments.
