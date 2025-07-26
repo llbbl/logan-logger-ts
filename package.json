@@ -1,6 +1,6 @@
 {
   "name": "logan-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
