@@ -1,6 +1,6 @@
 {
   "name": "logan-logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "publish:jsr": "deno publish"
+    "publish:jsr": "deno publish --set-version ${npm_package_version:-$(npm pkg get version | tr -d '\"')}"
   },
   "keywords": [
     "logging",

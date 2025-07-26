@@ -1,6 +1,5 @@
 {
   "name": "@logan/logger",
-  "version": "1.0.1",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "exports": {
     ".": "./src/index.ts"
