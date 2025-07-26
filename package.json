@@ -1,5 +1,5 @@
 {
-  "name": "@logan/logger",
+  "name": "logan-logger",
   "version": "1.1.0",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.js",
