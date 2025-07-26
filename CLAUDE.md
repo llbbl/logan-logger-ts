@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Logan Logger TypeScript
 
-Logan Logger (`@logan/logger`) is a universal TypeScript logging library designed for all JavaScript runtimes (Node.js, Deno, Bun, browsers, WebAssembly). It provides a unified API with runtime-specific adapters and zero dependencies for core functionality.
+Logan Logger (`logan-logger`) is a universal TypeScript logging library designed for all JavaScript runtimes (Node.js, Deno, Bun, browsers, WebAssembly). It provides a unified API with runtime-specific adapters and zero dependencies for core functionality.
 
-**Package Name:** `@logan/logger`  
+**Package Name:** `logan-logger` (npm) / `@logan/logger` (JSR)  
 **Version:** 1.1.0+  
 **Runtime-Specific Imports:** Available via dedicated entry points for optimal bundling
 
@@ -44,7 +44,7 @@ pnpm lint                    # ESLint
 ## Publishing Commands
 
 - Manually publish the package using `deno publish --dry-run --allow-dirty` to ensure readiness before actual publication
-- Package published as `@logan/logger` (scoped package)
+- Package published as `logan-logger` on npm and `@logan/logger` on JSR
 - Version 1.1.0+ includes runtime-specific entry points
 
 ## Architecture Overview
@@ -93,14 +93,17 @@ import { safeStringify } from '@/utils/serialization.js';
 Version 1.1.0+ provides dedicated entry points for optimal bundling and type safety:
 
 ```typescript
-// Main entry - auto-detection (generic)
-import { createLogger } from '@logan/logger';
+// NPM - Main entry (auto-detection)
+import { createLogger } from 'logan-logger';
 
-// Runtime-specific imports (recommended)
-import { NodeLogger, createMorganStream } from '@logan/logger/node';     // Node.js + Winston
-import { BrowserLogger, PerformanceLogger } from '@logan/logger/browser'; // Browser-optimized
-import { createLogger } from '@logan/logger/deno';                        // Deno-optimized  
-import { createLogger, NodeLogger } from '@logan/logger/bun';             // Bun-optimized
+// NPM - Runtime-specific imports (recommended)
+import { NodeLogger, createMorganStream } from 'logan-logger/node';     // Node.js + Winston
+import { BrowserLogger, PerformanceLogger } from 'logan-logger/browser'; // Browser-optimized
+import { createLogger } from 'logan-logger/deno';                        // Deno-optimized  
+import { createLogger, NodeLogger } from 'logan-logger/bun';             // Bun-optimized
+
+// JSR - For Deno (scoped package available)
+import { createLogger } from '@logan/logger';
 ```
 
 **Benefits:**

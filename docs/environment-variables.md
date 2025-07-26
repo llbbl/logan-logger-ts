@@ -116,7 +116,7 @@ LOG_COLOR=false
 ```
 
 ```typescript
-import { createLoggerForEnvironment } from '@logan/logger';
+import { createLoggerForEnvironment } from 'logan-logger';
 
 // Automatically uses environment variables
 const logger = createLoggerForEnvironment();
