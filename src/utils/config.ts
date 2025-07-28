@@ -96,8 +96,9 @@ async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
       return parsed;
     } else if (path.endsWith('.js')) {
       const fullPath = pathModule.resolve(path);
-      // Use dynamic import instead of require for Deno compatibility
-      const config = await import(fullPath);
+      // Use file URL for cross-platform dynamic import compatibility
+      const fileUrl = `file://${fullPath}`;
+      const config = await import(/* @vite-ignore */ fileUrl);
       return config.default || config;
     }
   } catch (error) {
