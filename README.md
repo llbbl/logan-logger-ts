@@ -9,6 +9,7 @@ A universal TypeScript logging library that works consistently across all JavaSc
 ## Features
 
 - 🌐 **Universal Runtime Support** - Works in Node.js, Deno, Bun, browsers, and WebAssembly
+- ⚛️ **Next.js Ready** - Full compatibility with App Router, Server Components, and API Routes
 - 🪶 **Zero Dependencies** - Core functionality with no required dependencies
 - ⚡ **Performance First** - Lazy evaluation, zero-allocation logging, minimal memory footprint
 - 🎯 **TypeScript Native** - Full type safety with comprehensive type definitions
@@ -57,6 +58,91 @@ const requestLogger = logger.child({
 
 requestLogger.info('Processing request', { endpoint: '/api/users' });
 ```
+
+### Next.js Integration
+
+Logan Logger is fully compatible with Next.js 13+ App Router, including Server Components, Client Components, and API Routes.
+
+#### Server Components
+```typescript
+import { createLogger, LogLevel } from 'logan-logger';
+
+const logger = createLogger({
+  level: process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
+  format: 'json'
+});
+
+export default async function ServerComponent() {
+  logger.info('Server component rendered');
+  
+  // Server-side data fetching
+  const data = await fetchData();
+  logger.debug('Data fetched', { recordCount: data.length });
+  
+  return <div>Server content</div>;
+}
+```
+
+#### Client Components
+```typescript
+'use client';
+
+import { createLogger, LogLevel } from 'logan-logger';
+
+const logger = createLogger({
+  level: LogLevel.INFO,
+  colorize: true
+});
+
+export default function ClientComponent() {
+  const handleClick = () => {
+    logger.info('User interaction', { action: 'button_click' });
+  };
+
+  return <button onClick={handleClick}>Click me</button>;
+}
+```
+
+#### API Routes
+```typescript
+// app/api/users/route.ts
+import { NextResponse } from 'next/server';
+import { createLogger } from 'logan-logger';
+
+const logger = createLogger({
+  format: 'json',
+  metadata: { service: 'api' }
+});
+
+export async function GET() {
+  const start = Date.now();
+  logger.info('API request started', { endpoint: '/api/users' });
+  
+  try {
+    const users = await getUsers();
+    const duration = Date.now() - start;
+    
+    logger.info('API request completed', { 
+      statusCode: 200, 
+      duration,
+      userCount: users.length 
+    });
+    
+    return NextResponse.json(users);
+  } catch (error) {
+    const duration = Date.now() - start;
+    logger.error('API request failed', { 
+      statusCode: 500, 
+      duration,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+```
+
+> **📋 See [Next.js Compatibility Guide](./docs/nextjs-compatibility.md) for complete setup instructions, advanced patterns, and troubleshooting.**
 
 ### Advanced Features
 
@@ -150,6 +236,7 @@ logger.info('User processed', safeData);
 
 | Runtime | Import Path | Status | Implementation | Features |
 |---------|-------------|--------|----------------|----------|
+| **Next.js 13+** | `logan-logger` | ✅ **Full** | **Auto-detection** | **Server/Client Components, API Routes, Edge Runtime** |
 | Node.js 20+ | `logan-logger/node` | ✅ Full | Winston + Console | File logging, transports, Morgan integration |
 | Bun | `logan-logger/bun` | ✅ Full | NodeLogger adapter | Same as Node.js |
 | Browser | `logan-logger/browser` | ✅ Full | Console API | CSS styling, performance marks, grouping |

@@ -15,7 +15,17 @@ export default defineConfig({
   plugins: [
     dts({
       insertTypesEntry: true,
-      rollupTypes: true,
+      rollupTypes: false,
+      bundledPackages: [],
+      copyDtsFiles: true,
+      beforeWriteFile: (filePath, content) => {
+        // Remove .ts extensions from imports in declaration files for webpack compatibility
+        const cleanContent = content.replace(/from ['"](.+?)\.ts['"]/g, "from '$1'");
+        return {
+          filePath,
+          content: cleanContent
+        };
+      },
     }),
   ],
   build: {
