@@ -96,8 +96,8 @@ async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
       return parsed;
     } else if (path.endsWith('.js')) {
       const fullPath = pathModule.resolve(path);
-      delete require.cache[fullPath]; // Clear cache
-      const config = require(fullPath);
+      // Use dynamic import instead of require for Deno compatibility
+      const config = await import(fullPath);
       return config.default || config;
     }
   } catch (error) {
