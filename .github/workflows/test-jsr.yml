@@ -49,7 +49,7 @@ jobs:
           # Create backup
           cp deno.json deno.json.backup
 
-          # Update version
+          # Use EXACT same logic as publish workflow
           node -e "
             const fs = require('fs');
             const version = '$current_version';
@@ -58,9 +58,11 @@ jobs:
             console.log(content);
 
             if (content.includes('\"version\"')) {
+              // Update existing version field
               content = content.replace(/\"version\":\s*\"[^\"]*\"/, '\"version\": \"' + version + '\"');
             } else {
-              content = content.replace(/(\"name\":\s*\"[^\"]*\")/, '\$1,\n  \"version\": \"' + version + '\"');
+              // Add version field after name field
+              content = content.replace(/(\"name\":\s*\"[^\"]*\")/, '$1,\n  \"version\": \"' + version + '\"');
             }
 
             console.log('Updated deno.json:');
@@ -72,6 +74,7 @@ jobs:
               console.log('✅ JSON is valid');
             } catch (e) {
               console.log('❌ JSON is invalid:', e.message);
+              console.log('Error at character position:', e.message.match(/position (\d+)/)?.[1]);
               process.exit(1);
             }
 
