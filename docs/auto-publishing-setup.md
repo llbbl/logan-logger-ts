@@ -33,26 +33,34 @@ Add these secrets in GitHub → Settings → Secrets and variables → Actions:
 
 ## Publishing Process
 
-### Standard Workflow
+### Standard Workflow (Using Makefile)
 ```bash
-# Bump version (patch/minor/major)
-pnpm version patch
+# Bump version (patch/minor/major) - updates all config files
+make bump-patch   # or bump-minor, bump-major
 
-# Push to main branch (can be direct push or PR merge)
-git push origin main
+# Push to main branch
+git push origin main && git push origin --tags
 
 # Workflow automatically detects version change and publishes
 ```
 
-### Alternative: PR-based
+### Alternative: Manual Version Setting
+```bash
+# Set specific version across all config files
+make set-version  # Will prompt for version number
+
+# Push to main branch
+git push origin main && git push origin --tags
+```
+
+### PR-based Workflow
 ```bash
 # In a feature branch
-pnpm version patch
-git add package.json
-git commit -m "Bump version to 1.1.7"
+make bump-patch
 git push origin feature-branch
 
 # Create and merge PR to main
+# Then push tags: git push origin --tags
 # Workflow triggers on merge and publishes
 ```
 
@@ -98,9 +106,9 @@ This project uses multiple configuration files for different purposes:
 3. Can fallback to `package.json` for Node.js packages
 
 **Our Strategy:**
-- `package.json` = single source of truth for version
-- `deno.json` = gets version synced automatically during CI
-- `jsr.json` = optional metadata file for documentation
+- Use `Makefile` to keep all versions in sync manually before commit
+- `package.json`, `jsr.json`, and `deno.json` all have matching versions
+- No dynamic version syncing in CI - everything committed explicitly
 
 ## Workflow Behavior
 

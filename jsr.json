@@ -1,5 +1,8 @@
 {
   "name": "@logan/logger",
+  "author": "Logan Lindquist Land",
+  "license": "MIT",
+  "version": "1.1.10",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "exports": {
     ".": "./src/index.ts"
@@ -21,7 +24,5 @@
     "bun",
     "browser",
     "winston"
-  ],
-  "author": "Logan Lindquist Land",
-  "license": "MIT"
+  ]
 }
