@@ -15,8 +15,19 @@ bump-major:
 
 # Internal target for version bumping
 bump-version:
+	@if [ -z "$(BUMP_TYPE)" ]; then \
+		echo "❌ Error: Don't call 'make bump-version' directly!"; \
+		echo ""; \
+		echo "Use one of these commands instead:"; \
+		echo "  make bump-patch  - Increment patch version (1.1.9 → 1.1.10)"; \
+		echo "  make bump-minor  - Increment minor version (1.1.9 → 1.2.0)"; \
+		echo "  make bump-major  - Increment major version (1.1.9 → 2.0.0)"; \
+		echo ""; \
+		exit 1; \
+	fi
 	@echo "Current version: $(CURRENT_VERSION)"
-	@NEW_VERSION=$$(npm version $(BUMP_TYPE) --no-git-tag-version | sed 's/^v//'); \
+	@npm version $(BUMP_TYPE) --no-git-tag-version >/dev/null; \
+	NEW_VERSION=$$(jq -r '.version' package.json); \
 	echo "New version: $$NEW_VERSION"; \
 	$(MAKE) update-all-configs VERSION=$$NEW_VERSION; \
 	$(MAKE) commit-version VERSION=$$NEW_VERSION
