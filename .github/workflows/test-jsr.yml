@@ -1,0 +1,105 @@
+name: Test JSR Publishing
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run dry-run only (no actual publishing)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-jsr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Update deno.json version
+        run: |
+          current_version=$(node -p "require('./package.json').version")
+          echo "Current version: $current_version"
+
+          # Create backup
+          cp deno.json deno.json.backup
+
+          # Update version
+          node -e "
+            const fs = require('fs');
+            const version = '$current_version';
+            let content = fs.readFileSync('deno.json', 'utf8');
+            console.log('Original deno.json:');
+            console.log(content);
+
+            if (content.includes('\"version\"')) {
+              content = content.replace(/\"version\":\s*\"[^\"]*\"/, '\"version\": \"' + version + '\"');
+            } else {
+              content = content.replace(/(\"name\":\s*\"[^\"]*\")/, '\$1,\n  \"version\": \"' + version + '\"');
+            }
+
+            console.log('Updated deno.json:');
+            console.log(content);
+
+            // Validate JSON
+            try {
+              JSON.parse(content);
+              console.log('✅ JSON is valid');
+            } catch (e) {
+              console.log('❌ JSON is invalid:', e.message);
+              process.exit(1);
+            }
+
+            fs.writeFileSync('deno.json', content);
+          "
+
+      - name: Verify deno.json
+        run: |
+          echo "Final deno.json contents:"
+          cat deno.json
+          echo ""
+          echo "JSON validation:"
+          node -e "JSON.parse(require('fs').readFileSync('deno.json', 'utf8')); console.log('✅ Valid')"
+
+      - name: Test JSR publish (dry-run)
+        if: inputs.dry_run == 'true'
+        run: |
+          echo "Running JSR publish dry-run..."
+          pnpx jsr publish --dry-run --allow-dirty
+
+      - name: Publish to JSR (real)
+        if: inputs.dry_run == 'false'
+        run: |
+          echo "Running real JSR publish..."
+          pnpx jsr publish --allow-dirty
+
+      - name: Restore deno.json
+        if: always()
+        run: |
+          if [ -f deno.json.backup ]; then
+            mv deno.json.backup deno.json
+            echo "Restored original deno.json"
+          fi
