@@ -87,7 +87,7 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('deno.json', 'utf8')); console.log('✅ Valid')"
 
       - name: Test JSR publish (dry-run)
-        if: inputs.dry_run == 'true'
+        if: inputs.dry_run != 'false'  # Default to dry-run for push triggers
         run: |
           echo "Running JSR publish dry-run..."
           pnpx jsr publish --dry-run --allow-dirty
