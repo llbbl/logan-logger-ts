@@ -66,19 +66,41 @@ git push origin feature-branch
 - ✅ Creates git tags for published versions
 - ✅ Uses `pnpm` as specified in project requirements
 
-## Configuration Details
+## Configuration Files
 
-### Package.json
-Already configured with:
-- Proper exports for multiple entry points (node, browser, deno, bun)
-- Public access for npm publishing
-- Build scripts using pnpm
+This project uses multiple configuration files for different purposes:
 
-### JSR.json
-Already configured with:
-- Scoped name `@logan/logger`
-- Proper exports and includes
-- Version will be auto-synced from package.json
+### `package.json` - npm & Version Source of Truth
+- **Primary purpose**: npm publishing and version management
+- **Package name**: `logan-logger`
+- **Version control**: Use `pnpm version patch/minor/major` to bump
+- **Exports**: Multiple entry points (node, browser, deno, bun)
+- **Build scripts**: Uses pnpm commands
+
+### `deno.json` - JSR Primary Configuration
+- **Primary purpose**: JSR publishing and Deno runtime configuration
+- **Package name**: `@logan/logger`
+- **Version**: Auto-synced from package.json during publishing
+- **Exports**: Points to TypeScript source files
+- **Deno tasks**: Test and check commands for Deno development
+
+### `jsr.json` - JSR Metadata (Optional)
+- **Primary purpose**: Additional JSR metadata and documentation
+- **Contains**: Description, keywords, license, author info
+- **Version**: Not needed - JSR reads from deno.json
+- **Status**: Kept for clarity but JSR uses deno.json as primary config
+
+### Why Multiple Files?
+
+**JSR Configuration Hierarchy:**
+1. JSR reads `deno.json` first (Deno team's preference)
+2. Falls back to `jsr.json` if deno.json missing
+3. Can fallback to `package.json` for Node.js packages
+
+**Our Strategy:**
+- `package.json` = single source of truth for version
+- `deno.json` = gets version synced automatically during CI
+- `jsr.json` = optional metadata file for documentation
 
 ## Workflow Behavior
 
