@@ -86,14 +86,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Update jsr.json version to match package.json
+      # Update deno.json version to match package.json (JSR uses deno.json)
       - name: Update JSR version
         run: |
           current_version=$(node -p "require('./package.json').version")
           node -e "
-            const jsr = require('./jsr.json');
-            jsr.version = '$current_version';
-            require('fs').writeFileSync('jsr.json', JSON.stringify(jsr, null, 2));
+            const deno = require('./deno.json');
+            deno.version = '$current_version';
+            require('fs').writeFileSync('deno.json', JSON.stringify(deno, null, 2));
           "
 
       # Publish to JSR using pnpx (no Deno setup needed)
