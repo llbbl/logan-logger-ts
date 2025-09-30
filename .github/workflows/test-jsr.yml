@@ -11,6 +11,8 @@ on:
         options:
           - 'true'
           - 'false'
+  push:
+    branches: [fix-jsr-publish2]  # Trigger on pushes to current branch
 
 jobs:
   test-jsr:
