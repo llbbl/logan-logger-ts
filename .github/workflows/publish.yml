@@ -86,12 +86,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Setup for JSR publishing
-      - name: Setup Deno for JSR
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
-
       # Update jsr.json version to match package.json
       - name: Update JSR version
         run: |
@@ -102,11 +96,9 @@ jobs:
             require('fs').writeFileSync('jsr.json', JSON.stringify(jsr, null, 2));
           "
 
-      # Publish to JSR
+      # Publish to JSR using pnpx (no Deno setup needed)
       - name: Publish to JSR
-        run: deno publish --allow-slow-types --allow-dirty
-        env:
-          JSR_TOKEN: ${{ secrets.JSR_TOKEN }}
+        run: pnpx jsr publish
 
       - name: Create Git Tag
         run: |
