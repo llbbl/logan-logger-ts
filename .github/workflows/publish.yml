@@ -86,26 +86,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Update deno.json version to match package.json (JSR uses deno.json)
-      - name: Update JSR version
-        run: |
-          current_version=$(node -p "require('./package.json').version")
-          # Use Node.js to safely update version without breaking JSONC comments
-          node -e "
-            const fs = require('fs');
-            const version = '$current_version';
-            let content = fs.readFileSync('deno.json', 'utf8');
-            if (content.includes('\"version\"')) {
-              // Update existing version field
-              content = content.replace(/\"version\":\s*\"[^\"]*\"/, '\"version\": \"' + version + '\"');
-            } else {
-              // Add version field after name field using a more robust approach
-              content = content.replace(/\"name\":\s*\"@logan\/logger\",/g, '\"name\": \"@logan/logger\",\n  \"version\": \"' + version + '\",');
-            }
-            fs.writeFileSync('deno.json', content);
-          "
-
-      # Publish to JSR using pnpx (no Deno setup needed)
+      # Publish to JSR (version should already be synced via Makefile)
       - name: Publish to JSR
         run: pnpx jsr publish
 

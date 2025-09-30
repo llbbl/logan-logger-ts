@@ -12,9 +12,10 @@ Logan Logger (`logan-logger`) is a universal TypeScript logging library designed
 
 ## Development Commands
 
-### Package Manager
+### Package Manager & Version Management
 - Use `pnpm` as the primary package manager
 - Use `bun` for running scripts and development: `bun run src/index.ts`
+- **Version bumping**: Use `make bump-patch|minor|major` to update all config files
 
 ### Core Development
 ```bash
@@ -43,9 +44,28 @@ pnpm lint                    # ESLint
 
 ## Publishing Commands
 
-- Manually publish the package using `deno publish --dry-run --allow-dirty` to ensure readiness before actual publication
+### Version Management
+```bash
+# Bump versions across all config files
+make bump-patch     # 1.1.9 → 1.1.10
+make bump-minor     # 1.1.9 → 1.2.0
+make bump-major     # 1.1.9 → 2.0.0
+
+# Manual version setting
+make set-version    # Prompts for specific version
+
+# Check current versions
+make show-versions
+
+# Sync versions if out of sync
+make version-sync
+```
+
+### Publishing Process
+- Use Makefile to bump versions (updates package.json, jsr.json, deno.json)
+- Push to main branch with tags: `git push origin main && git push origin --tags`
+- GitHub Actions automatically publishes to both npm and JSR
 - Package published as `logan-logger` on npm and `@logan/logger` on JSR
-- Version 1.1.0+ includes runtime-specific entry points
 
 ## Architecture Overview
 
