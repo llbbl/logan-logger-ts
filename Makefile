@@ -34,13 +34,17 @@ bump-version:
 
 # Update all config files with the same version
 update-all-configs:
-	@echo "Updating all configs to version $(VERSION)"
+	@echo "Updating all configs to version: '$(VERSION)'"
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ Error: VERSION is empty!"; \
+		exit 1; \
+	fi
 	@# Update package.json (npm already did this, but just in case)
-	@jq --arg v "$(VERSION)" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
+	@jq --arg v "$(VERSION)" '.version = $$v' package.json > package.json.tmp && mv package.json.tmp package.json
 	@# Update jsr.json
-	@jq --arg v "$(VERSION)" '.version = $v' jsr.json > jsr.json.tmp && mv jsr.json.tmp jsr.json
+	@jq --arg v "$(VERSION)" '.version = $$v' jsr.json > jsr.json.tmp && mv jsr.json.tmp jsr.json
 	@# Update deno.json
-	@jq --arg v "$(VERSION)" '.version = $v' deno.json > deno.json.tmp && mv deno.json.tmp deno.json
+	@jq --arg v "$(VERSION)" '.version = $$v' deno.json > deno.json.tmp && mv deno.json.tmp deno.json
 
 # Commit the version changes
 commit-version:
