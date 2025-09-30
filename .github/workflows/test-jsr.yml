@@ -61,8 +61,8 @@ jobs:
               // Update existing version field
               content = content.replace(/\"version\":\s*\"[^\"]*\"/, '\"version\": \"' + version + '\"');
             } else {
-              // Add version field after name field
-              content = content.replace(/(\"name\":\s*\"[^\"]*\")/, '$1,\n  \"version\": \"' + version + '\"');
+              // Add version field after name field using a more robust approach
+              content = content.replace(/\"name\":\s*\"@logan\/logger\",/g, '\"name\": \"@logan/logger\",\n  \"version\": \"' + version + '\",');
             }
 
             console.log('Updated deno.json:');
