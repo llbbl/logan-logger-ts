@@ -2,7 +2,7 @@ name: Publish Package
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'package.json'
   # Only publish when package.json version changes on main branch
@@ -89,12 +89,3 @@ jobs:
       # Publish to JSR (version should already be synced via Makefile)
       - name: Publish to JSR
         run: pnpx jsr publish
-
-      - name: Create Git Tag
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag "v${{ needs.check-version-change.outputs.current-version }}"
-          git push origin "v${{ needs.check-version-change.outputs.current-version }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
