@@ -60,7 +60,7 @@
   "author": "Logan Lindquist Land",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.19.17",
+    "@types/node": "^24.6.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitest/ui": "^3.2.4",
