@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: ['20.19', '22.12', '24']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -91,10 +91,10 @@ jobs:
         with:
           version: 8
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 20.19
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20.19'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -123,7 +123,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20.19'
           cache: 'pnpm'
 
       - name: Install dependencies
