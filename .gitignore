@@ -23,7 +23,7 @@ out/
 .vscode/
 !.vscode/settings.json
 .idea/
-!.idea/inspectionProfiles/
+.junie/
 *.swp
 *.swo
 *~
