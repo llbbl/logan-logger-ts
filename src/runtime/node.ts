@@ -12,13 +12,12 @@ export class NodeLogger extends BaseLogger {
 
   private async initializeWinston(): Promise<void> {
     try {
-      // Try to load Winston if available
-      // @ts-ignore - Optional peer dependency
+      // Try to load Winston if available (optional peer dependency)
       const winston = await import('winston');
       this.winston = this.createWinstonLogger(winston);
     } catch (error) {
       // Winston not available, will fall back to console
-      console.warn('[logan-logger] Winston not found, falling back to console logging');
+      console.warn('[logan-logger] Winston not found, falling back to console logging:', error);
     }
   }
 

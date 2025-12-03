@@ -1,5 +1,5 @@
 // Bun-specific test file
-// @ts-ignore - Bun test framework import
+// @ts-expect-error - Bun test framework import
 import { describe, it, expect } from 'bun:test';
 import { createLogger, LogLevel } from '../src/index.ts';
 

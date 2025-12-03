@@ -74,7 +74,8 @@ export async function loadConfigFromFile(configPath?: string): Promise<Partial<L
         return await loadBunConfig(path);
       }
     } catch (error) {
-      // Continue to the next path
+      // Continue to the next path if file doesn't exist or can't be loaded
+      void error; // Suppress unused variable warning
     }
   }
   
@@ -83,8 +84,8 @@ export async function loadConfigFromFile(configPath?: string): Promise<Partial<L
 
 async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
   try {
-    const fs = await import('fs/promises');
-    const pathModule = await import('path');
+    const fs = await import('node:fs/promises');
+    const pathModule = await import('node:path');
     
     if (path.endsWith('.json')) {
       const content = await fs.readFile(path, 'utf-8');
@@ -103,8 +104,9 @@ async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
     }
   } catch (error) {
     // File doesn't exist or can't be parsed
+    void error; // Suppress unused variable warning
   }
-  
+
   return {};
 }
 
@@ -124,8 +126,9 @@ async function loadDenoConfig(path: string): Promise<Partial<LoggerConfig>> {
     }
   } catch (error) {
     // File doesn't exist or can't be parsed
+    void error; // Suppress unused variable warning
   }
-  
+
   return {};
 }
 

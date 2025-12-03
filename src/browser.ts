@@ -14,7 +14,7 @@ export * from './utils/formatting.ts';
 
 // Browser-specific factory functions (avoid importing Node.js factory)
 import { BrowserLogger } from './runtime/browser.ts';
-import { LoggerConfig, LogLevel, ILogger } from './core/types.ts';
+import { type LoggerConfig, LogLevel, type ILogger } from './core/types.ts';
 import { detectRuntime } from './utils/runtime.ts';
 
 function getDefaultBrowserConfig(): LoggerConfig {
@@ -47,6 +47,7 @@ function getBrowserEnvironment(): string {
   // Browser environment detection
   if (typeof window !== 'undefined') {
     // Check for common build-time environment indicators
+    // biome-ignore lint/suspicious/noExplicitAny: Build-time global variable not in TS types
     return (globalThis as any).__ENV__ || 'development';
   }
   

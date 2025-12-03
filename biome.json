@@ -1,73 +1,100 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
-  "files": {
-    "ignoreUnknown": false,
-    "includes": [
-      "**",
-      "!**/dist/**",
-      "!**/node_modules/**",
-      "!**/*.config.js",
-      "!**/*.config.ts",
-      "!**/pnpm-lock.yaml"
-    ]
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineEnding": "lf",
-    "lineWidth": 100
-  },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "correctness": {
-        "noUnusedVariables": "error"
-      },
-      "style": {
-        "useConst": "error",
-        "useConsistentArrayType": { "level": "error", "options": { "syntax": "shorthand" } }
-      },
-      "suspicious": {
-        "noExplicitAny": "warn",
-        "noVar": "error"
-      },
-      "complexity": {
-        "noForEach": "off",
-        "useArrowFunction": "error"
-      }
-    }
-  },
-  "javascript": {
+    "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
+    "files": {
+        "ignoreUnknown": false,
+        "includes": [
+            "**",
+            "!**/dist/**",
+            "!**/node_modules/**",
+            "!**/*.config.js",
+            "!**/*.config.ts",
+            "!**/pnpm-lock.yaml"
+        ]
+    },
     "formatter": {
-      "quoteStyle": "single",
-      "jsxQuoteStyle": "double",
-      "trailingCommas": "es5",
-      "semicolons": "always"
-    }
-  },
-  "overrides": [
-    {
-      "includes": ["**/src/**/*.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedVariables": {
-              "level": "error",
-              "options": {
-                "ignoreRestSiblings": true
-              }
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 2,
+        "lineEnding": "lf",
+        "lineWidth": 100
+    },
+    "assist": {
+        "actions": {
+            "source": {
+                "organizeImports": "on"
             }
-          }
         }
-      }
-    }
-  ]
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "correctness": {
+                "noUnusedVariables": "error"
+            },
+            "style": {
+                "useConst": "error",
+                "useConsistentArrayType": {
+                    "level": "error",
+                    "options": {
+                        "syntax": "shorthand"
+                    }
+                }
+            },
+            "suspicious": {
+                "noExplicitAny": "warn",
+                "noVar": "error"
+            },
+            "complexity": {
+                "noForEach": "off",
+                "useArrowFunction": "error"
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "single",
+            "jsxQuoteStyle": "double",
+            "trailingCommas": "es5",
+            "semicolons": "always"
+        }
+    },
+    "overrides": [
+        {
+            "includes": [
+                "**/src/**/*.ts"
+            ],
+            "linter": {
+                "rules": {
+                    "correctness": {
+                        "noUnusedVariables": {
+                            "level": "error",
+                            "options": {
+                                "ignoreRestSiblings": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "includes": [
+                "**/tests/**/*.ts",
+                "**/*.test.ts",
+                "**/*.spec.ts"
+            ],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noExplicitAny": "off"
+                    }
+                }
+            }
+        }
+    ]
 }

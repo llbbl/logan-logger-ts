@@ -1,10 +1,10 @@
-import { 
-  ILogger, 
-  LogLevel, 
-  LogMessage, 
-  LogEntry,
-  RuntimeName,
-  LoggerConfig 
+import {
+  type ILogger,
+  LogLevel,
+  type LogMessage,
+  type LogEntry,
+  type RuntimeName,
+  type LoggerConfig
 } from './types.ts';
 import { detectRuntime } from '../utils/runtime.ts';
 

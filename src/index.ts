@@ -16,7 +16,7 @@ export * from './utils/formatting.ts';
 
 // Convenience exports for common use cases
 import { createLogger, createLoggerForEnvironment } from './core/factory.ts';
-import { LogLevel, ILogger } from './core/types.ts';
+import { LogLevel, type ILogger } from './core/types.ts';
 
 // Pre-configured loggers for different environments
 export const logger: ILogger = createLoggerForEnvironment();

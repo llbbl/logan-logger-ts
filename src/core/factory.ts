@@ -1,4 +1,4 @@
-import { ILogger, LoggerConfig, LogLevel } from './types.ts';
+import { type ILogger, type LoggerConfig, LogLevel } from './types.ts';
 import { detectRuntime } from '../utils/runtime.ts';
 import { NodeLogger } from '../runtime/node.ts';
 import { BrowserLogger } from '../runtime/browser.ts';
@@ -15,7 +15,7 @@ export class LoggerFactory {
    */
   static create(config: Partial<LoggerConfig> = {}): ILogger {
     const runtime = detectRuntime();
-    const mergedConfig = this.mergeConfig(config);
+    const mergedConfig = LoggerFactory.mergeConfig(config);
 
     switch (runtime.name) {
       case 'node':
@@ -114,6 +114,7 @@ function getEnvironment(): string {
   // Browser environment detection
   if (typeof window !== 'undefined') {
     // Check for common build-time environment indicators
+    // biome-ignore lint/suspicious/noExplicitAny: Build-time global variable not in TS types
     return (globalThis as any).__ENV__ || 'development';
   }
   

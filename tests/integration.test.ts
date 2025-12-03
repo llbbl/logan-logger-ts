@@ -410,7 +410,7 @@ describe('Integration Tests', () => {
       const logger = createLogger();
 
       // Simulate HTTP request logging
-      const requestId = 'req_' + Math.random().toString(36).substring(2, 11);
+      const requestId = `req_${Math.random().toString(36).substring(2, 11)}`;
       const requestLogger = logger.child({ requestId });
 
       requestLogger.info('HTTP request started', {

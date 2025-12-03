@@ -120,28 +120,32 @@ export interface ILogger {
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   info(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log a warning message.
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   warn(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log an error message.
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   error(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log a message at a specific level.
    * @param level - The log level
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   log(level: LogLevel, message: LogMessage, metadata?: any): void;
   
   /**

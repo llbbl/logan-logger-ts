@@ -1,4 +1,4 @@
-import { LogEntry, LogLevel } from '../core/types.ts';
+import { type LogEntry, LogLevel } from '../core/types.ts';
 import { safeStringify } from './serialization.ts';
 
 /**

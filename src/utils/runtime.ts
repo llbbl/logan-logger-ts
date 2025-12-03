@@ -23,11 +23,13 @@ export function detectRuntime(): RuntimeInfo {
 
 function detectRuntimeName(): RuntimeName {
   // Check for Deno
+  // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
   if (typeof (globalThis as any).Deno !== 'undefined') {
     return 'deno';
   }
 
   // Check for Bun
+  // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
   if (typeof (globalThis as any).Bun !== 'undefined') {
     return 'bun';
   }
@@ -38,6 +40,7 @@ function detectRuntimeName(): RuntimeName {
   }
 
   // Check for Web Worker
+  // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
   if (typeof (globalThis as any).importScripts === 'function' && typeof window === 'undefined') {
     return 'webworker';
   }
@@ -54,14 +57,18 @@ function getRuntimeVersion(runtime: RuntimeName): string | undefined {
   switch (runtime) {
     case 'node':
       return typeof process !== 'undefined' ? process.version : undefined;
-    
+
     case 'deno':
-      return typeof (globalThis as any).Deno !== 'undefined' 
-        ? (globalThis as any).Deno.version?.deno 
+      // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
+      return typeof (globalThis as any).Deno !== 'undefined'
+        // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
+        ? (globalThis as any).Deno.version?.deno
         : undefined;
-    
+
     case 'bun':
+      // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
       return typeof (globalThis as any).Bun !== 'undefined'
+        // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
         ? (globalThis as any).Bun.version
         : undefined;
     
