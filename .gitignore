@@ -23,6 +23,8 @@ out/
 .vscode/
 .idea/
 .junie/
+.cursor/
+.cursorrules
 *.swp
 *.swo
 *~
