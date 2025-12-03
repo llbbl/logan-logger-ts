@@ -21,7 +21,6 @@ out/
 
 # IDE and editors
 .vscode/
-!.vscode/settings.json
 .idea/
 .junie/
 *.swp
