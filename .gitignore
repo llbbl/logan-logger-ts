@@ -21,9 +21,10 @@ out/
 
 # IDE and editors
 .vscode/
-!.vscode/settings.json
 .idea/
-!.idea/inspectionProfiles/
+.junie/
+.cursor/
+.cursorrules
 *.swp
 *.swo
 *~
