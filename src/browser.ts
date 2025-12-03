@@ -1,25 +1,23 @@
 // Browser-specific exports
 // Import this module when running in browser environments
 
-export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
-
 // Re-export core types (no implementations that could pull in Node.js deps)
 export type { ILogger, LoggerConfig } from './core/types.ts';
 export { LogLevel } from './core/types.ts';
-
+export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
+export * from './utils/formatting.ts';
 // Browser-safe utilities (no Node.js dependencies)
 export * from './utils/runtime.ts';
 export * from './utils/serialization.ts';
-export * from './utils/formatting.ts';
 
+import { type ILogger, type LoggerConfig, LogLevel } from './core/types.ts';
 // Browser-specific factory functions (avoid importing Node.js factory)
 import { BrowserLogger } from './runtime/browser.ts';
-import { LoggerConfig, LogLevel, ILogger } from './core/types.ts';
 import { detectRuntime } from './utils/runtime.ts';
 
 function getDefaultBrowserConfig(): LoggerConfig {
   const runtime = detectRuntime();
-  
+
   return {
     level: LogLevel.INFO,
     format: 'text',
@@ -29,27 +27,30 @@ function getDefaultBrowserConfig(): LoggerConfig {
     transports: [
       {
         type: 'console',
-        options: {}
-      }
-    ]
+        options: {},
+      },
+    ],
   };
 }
 
 function getBrowserEnvironment(): string {
   // Check various environment variables
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NODE_ENV || 
-           process.env.NEXT_PUBLIC_APP_ENV || 
-           process.env.ENVIRONMENT || 
-           'development';
+    return (
+      process.env.NODE_ENV ||
+      process.env.NEXT_PUBLIC_APP_ENV ||
+      process.env.ENVIRONMENT ||
+      'development'
+    );
   }
-  
+
   // Browser environment detection
   if (typeof window !== 'undefined') {
     // Check for common build-time environment indicators
+    // biome-ignore lint/suspicious/noExplicitAny: Build-time global variable not in TS types
     return (globalThis as any).__ENV__ || 'development';
   }
-  
+
   return 'development';
 }
 
@@ -79,10 +80,10 @@ export function createLogger(config: Partial<LoggerConfig> = {}): ILogger {
     ...config,
     metadata: {
       ...defaultConfig.metadata,
-      ...config.metadata
-    }
+      ...config.metadata,
+    },
   };
-  
+
   return new BrowserLogger(mergedConfig);
 }
 
@@ -93,12 +94,12 @@ export function createLogger(config: Partial<LoggerConfig> = {}): ILogger {
  */
 export function createLoggerForEnvironment(): ILogger {
   const env = getBrowserEnvironment();
-  
+
   const config: Partial<LoggerConfig> = {
     level: getLogLevelForBrowserEnvironment(env),
     colorize: env !== 'production',
     timestamp: true,
-    format: env === 'production' ? 'json' : 'text'
+    format: env === 'production' ? 'json' : 'text',
   };
 
   return createLogger(config);
@@ -109,8 +110,12 @@ export const logger = createLoggerForEnvironment();
 
 // Legacy compatibility exports
 export const log = {
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - legacy API accepts arbitrary metadata
   debug: (message: string, meta?: any) => logger.debug(message, meta),
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - legacy API accepts arbitrary metadata
   info: (message: string, meta?: any) => logger.info(message, meta),
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - legacy API accepts arbitrary metadata
   warn: (message: string, meta?: any) => logger.warn(message, meta),
-  error: (message: string, meta?: any) => logger.error(message, meta)
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - legacy API accepts arbitrary metadata
+  error: (message: string, meta?: any) => logger.error(message, meta),
 };

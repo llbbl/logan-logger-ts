@@ -1,12 +1,13 @@
-import { ILogger, LoggerConfig, LogLevel } from './types.ts';
-import { detectRuntime } from '../utils/runtime.ts';
-import { NodeLogger } from '../runtime/node.ts';
 import { BrowserLogger } from '../runtime/browser.ts';
+import { NodeLogger } from '../runtime/node.ts';
 import { getDefaultConfig } from '../utils/config.ts';
+import { detectRuntime } from '../utils/runtime.ts';
+import { type ILogger, type LoggerConfig, LogLevel } from './types.ts';
 
 /**
  * Factory class for creating logger instances based on the detected runtime.
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: Factory pattern provides namespace for related creation methods
 export class LoggerFactory {
   /**
    * Create a logger instance appropriate for the current runtime.
@@ -15,25 +16,25 @@ export class LoggerFactory {
    */
   static create(config: Partial<LoggerConfig> = {}): ILogger {
     const runtime = detectRuntime();
-    const mergedConfig = this.mergeConfig(config);
+    const mergedConfig = LoggerFactory.mergeConfig(config);
 
     switch (runtime.name) {
       case 'node':
         return new NodeLogger(mergedConfig);
-      
+
       case 'deno':
         // For now, use console-based logger for Deno
         // TODO: Implement Deno-specific logger
         return new BrowserLogger(mergedConfig);
-      
+
       case 'bun':
         // For now, use Node.js logger for Bun (similar APIs)
         return new NodeLogger(mergedConfig);
-      
+
       case 'browser':
       case 'webworker':
         return new BrowserLogger(mergedConfig);
-      
+
       default:
         // Fallback to console-based logger
         return new BrowserLogger(mergedConfig);
@@ -46,6 +47,7 @@ export class LoggerFactory {
    * @param metadata - Additional metadata to include in all child log messages
    * @returns A new logger instance with the additional metadata
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata
   static createChild(parent: ILogger, metadata: Record<string, any>): ILogger {
     return parent.child(metadata);
   }
@@ -57,8 +59,8 @@ export class LoggerFactory {
       ...userConfig,
       metadata: {
         ...defaultConfig.metadata,
-        ...userConfig.metadata
-      }
+        ...userConfig.metadata,
+      },
     };
   }
 }
@@ -70,12 +72,12 @@ export class LoggerFactory {
  * @example
  * ```typescript
  * import { createLogger, LogLevel } from 'logan-logger';
- * 
+ *
  * const logger = createLogger({
  *   level: LogLevel.DEBUG,
  *   colorize: true
  * });
- * 
+ *
  * logger.info('Hello world!');
  * ```
  */
@@ -91,12 +93,12 @@ export function createLogger(config?: Partial<LoggerConfig>): ILogger {
  */
 export function createLoggerForEnvironment(): ILogger {
   const env = getEnvironment();
-  
+
   const config: Partial<LoggerConfig> = {
     level: getLogLevelForEnvironment(env),
     colorize: env !== 'production',
     timestamp: true,
-    format: env === 'production' ? 'json' : 'text'
+    format: env === 'production' ? 'json' : 'text',
   };
 
   return createLogger(config);
@@ -105,18 +107,21 @@ export function createLoggerForEnvironment(): ILogger {
 function getEnvironment(): string {
   // Check various environment variables
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NODE_ENV || 
-           process.env.NEXT_PUBLIC_APP_ENV || 
-           process.env.ENVIRONMENT || 
-           'development';
+    return (
+      process.env.NODE_ENV ||
+      process.env.NEXT_PUBLIC_APP_ENV ||
+      process.env.ENVIRONMENT ||
+      'development'
+    );
   }
-  
+
   // Browser environment detection
   if (typeof window !== 'undefined') {
     // Check for common build-time environment indicators
+    // biome-ignore lint/suspicious/noExplicitAny: Build-time global variable not in TS types
     return (globalThis as any).__ENV__ || 'development';
   }
-  
+
   return 'development';
 }
 

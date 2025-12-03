@@ -12,7 +12,7 @@ export enum LogLevel {
   /** Error messages */
   ERROR = 3,
   /** No messages - silent mode */
-  SILENT = 4
+  SILENT = 4,
 }
 
 /**
@@ -64,6 +64,7 @@ export interface LoggerConfig {
   /** Whether to colorize log output (if supported) */
   colorize: boolean;
   /** Default metadata to include with all log messages */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - metadata accepts arbitrary data types
   metadata: Record<string, any>;
   /** Transport configurations for log output */
   transports?: TransportConfig[];
@@ -78,6 +79,7 @@ export interface TransportConfig {
   /** Minimum log level for this transport */
   level?: LogLevel;
   /** Transport-specific options */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - transport options are plugin-specific
   options: Record<string, any>;
 }
 
@@ -98,6 +100,7 @@ export interface LogEntry {
   /** The log message */
   message: string;
   /** Additional structured data */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - metadata accepts arbitrary data types
   metadata?: Record<string, any>;
   /** Runtime that generated this log entry */
   runtime: RuntimeName;
@@ -113,54 +116,60 @@ export interface ILogger {
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   debug(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log an informational message.
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   info(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log a warning message.
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   warn(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log an error message.
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   error(message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Log a message at a specific level.
    * @param level - The log level
    * @param message - The message to log (string or lazy function)
    * @param metadata - Optional structured data to include
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   log(level: LogLevel, message: LogMessage, metadata?: any): void;
-  
+
   /**
    * Set the minimum log level for this logger.
    * @param level - The minimum log level
    */
   setLevel(level: LogLevel): void;
-  
+
   /**
    * Get the current minimum log level.
    * @returns The current log level
    */
   getLevel(): LogLevel;
-  
+
   /**
    * Create a child logger with additional metadata.
    * @param metadata - Additional metadata to include in all child log messages
    * @returns A new logger instance with the additional metadata
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see interface docs)
   child(metadata: Record<string, any>): ILogger;
 }
 
@@ -174,13 +183,13 @@ export interface ILoggerAdapter {
    * @param entry - The log entry to write
    */
   log(entry: LogEntry): void;
-  
+
   /**
    * Set the minimum log level for this adapter.
    * @param level - The minimum log level
    */
   setLevel(level: LogLevel): void;
-  
+
   /**
    * Get the current minimum log level.
    * @returns The current log level

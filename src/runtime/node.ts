@@ -1,8 +1,9 @@
 import { BaseLogger } from '../core/logger.ts';
-import { LogEntry, LogLevel, LoggerConfig } from '../core/types.ts';
+import { type LogEntry, type LoggerConfig, LogLevel } from '../core/types.ts';
 import { safeStringify } from '../utils/serialization.ts';
 
 export class NodeLogger extends BaseLogger {
+  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
   private winston?: any;
 
   constructor(config: Partial<LoggerConfig> = {}) {
@@ -12,16 +13,18 @@ export class NodeLogger extends BaseLogger {
 
   private async initializeWinston(): Promise<void> {
     try {
-      // Try to load Winston if available
-      // @ts-ignore - Optional peer dependency
+      // Try to load Winston if available (optional peer dependency)
+      // biome-ignore lint/suspicious/noTsIgnore: Winston optional dependency - error only exists in CI without Winston
+      // @ts-ignore - Winston is an optional peer dependency, may not be installed in all environments
       const winston = await import('winston');
       this.winston = this.createWinstonLogger(winston);
     } catch (error) {
       // Winston not available, will fall back to console
-      console.warn('[logan-logger] Winston not found, falling back to console logging');
+      console.warn('[logan-logger] Winston not found, falling back to console logging:', error);
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
   private createWinstonLogger(winston: any): any {
     const logFormat = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -33,6 +36,7 @@ export class NodeLogger extends BaseLogger {
     const consoleFormat = winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp({ format: 'HH:mm:ss' }),
+      // biome-ignore lint/suspicious/noExplicitAny: Winston format callback parameter has dynamic shape
       winston.format.printf(({ timestamp, level, message, ...meta }: any) => {
         const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
         return `${timestamp} [${level}]: ${message} ${metaStr}`;

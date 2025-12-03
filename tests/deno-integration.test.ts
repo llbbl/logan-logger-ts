@@ -1,16 +1,16 @@
 // Deno-specific integration test
-import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { assertEquals, assertExists } from 'https://deno.land/std@0.208.0/assert/mod.ts';
 
 // Note: This would work with proper Deno import maps in a real scenario
 // For now, this is a placeholder that demonstrates Deno testing structure
 
-Deno.test("Deno runtime detection", () => {
+Deno.test('Deno runtime detection', () => {
   // Test that we can detect we're running in Deno
-  const isDeno = typeof Deno !== "undefined";
+  const isDeno = typeof Deno !== 'undefined';
   assertEquals(isDeno, true);
 });
 
-Deno.test("Environment access", () => {
+Deno.test('Environment access', () => {
   // Test that we can access Deno environment
   assertExists(Deno.env);
 });

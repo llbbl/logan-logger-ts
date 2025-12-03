@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLogger, createLoggerForEnvironment, LogLevel } from '../src/index.ts';
 
 describe('Logger', () => {
@@ -10,7 +10,7 @@ describe('Logger', () => {
   describe('Basic logging functionality', () => {
     it('should create a logger with default configuration', () => {
       const logger = createLogger();
-      
+
       expect(logger).toBeDefined();
       expect(logger.debug).toBeTypeOf('function');
       expect(logger.info).toBeTypeOf('function');
@@ -20,7 +20,7 @@ describe('Logger', () => {
 
     it('should respect log levels', () => {
       const logger = createLogger({
-        level: LogLevel.WARN
+        level: LogLevel.WARN,
       });
 
       // Mock console methods
@@ -28,7 +28,7 @@ describe('Logger', () => {
         debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
         info: vi.spyOn(console, 'info').mockImplementation(() => {}),
         warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-        error: vi.spyOn(console, 'error').mockImplementation(() => {})
+        error: vi.spyOn(console, 'error').mockImplementation(() => {}),
       };
 
       logger.debug('debug message');
@@ -57,11 +57,11 @@ describe('Logger', () => {
 
     it('should support lazy evaluation of messages', () => {
       const logger = createLogger({
-        level: LogLevel.ERROR // Only errors will be logged
+        level: LogLevel.ERROR, // Only errors will be logged
       });
 
       const expensiveFunction = vi.fn(() => 'expensive result');
-      
+
       // This should not call the expensive function
       logger.debug(() => `Debug: ${expensiveFunction()}`);
       expect(expensiveFunction).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('Logger', () => {
 
       expect(childLogger).toBeDefined();
       expect(childLogger).not.toBe(parentLogger);
-      
+
       // Child logger should have same methods
       expect(childLogger.debug).toBeTypeOf('function');
       expect(childLogger.info).toBeTypeOf('function');
@@ -87,7 +87,7 @@ describe('Logger', () => {
 
     it('should allow level changes', () => {
       const logger = createLogger({
-        level: LogLevel.INFO
+        level: LogLevel.INFO,
       });
 
       expect(logger.getLevel()).toBe(LogLevel.INFO);

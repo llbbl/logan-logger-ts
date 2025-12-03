@@ -1,9 +1,9 @@
-import { LoggerConfig, LogLevel } from '../core/types.ts';
+import { type LoggerConfig, LogLevel } from '../core/types.ts';
 import { detectRuntime } from './runtime.ts';
 
 export function getDefaultConfig(): LoggerConfig {
   const runtime = detectRuntime();
-  
+
   return {
     level: LogLevel.INFO,
     format: 'text',
@@ -13,57 +13,59 @@ export function getDefaultConfig(): LoggerConfig {
     transports: [
       {
         type: 'console',
-        options: {}
-      }
-    ]
+        options: {},
+      },
+    ],
   };
 }
 
 export function loadConfigFromEnvironment(): Partial<LoggerConfig> {
   const config: Partial<LoggerConfig> = {};
-  
+
   // Check for environment variables
   if (typeof process !== 'undefined' && process.env) {
     const env = process.env;
-    
+
     // Log level
     if (env.LOG_LEVEL) {
       config.level = stringToLogLevel(env.LOG_LEVEL);
     }
-    
+
     // Format
     if (env.LOG_FORMAT && ['json', 'text'].includes(env.LOG_FORMAT)) {
       config.format = env.LOG_FORMAT as 'json' | 'text';
     }
-    
+
     // Timestamp
     if (env.LOG_TIMESTAMP) {
       config.timestamp = env.LOG_TIMESTAMP.toLowerCase() === 'true';
     }
-    
+
     // Colorize
     if (env.LOG_COLOR) {
       config.colorize = env.LOG_COLOR.toLowerCase() === 'true';
     }
   }
-  
+
   return config;
 }
 
 export async function loadConfigFromFile(configPath?: string): Promise<Partial<LoggerConfig>> {
   const runtime = detectRuntime();
-  
+
   if (!runtime.capabilities.fileSystem) {
     return {};
   }
-  
-  const possiblePaths = configPath ? [configPath] : [
-    'logan.config.json',
-    'logan.config.js',
-    '.loganrc',
-    'package.json' // Check for logan config in package.json
-  ];
-  
+
+  const possiblePaths = configPath
+    ? [configPath]
+    : [
+        'logan.config.json',
+        'logan.config.js',
+        '.loganrc',
+        'package.json', // Check for logan config in package.json
+      ];
+
   for (const path of possiblePaths) {
     try {
       if (runtime.name === 'node') {
@@ -74,22 +76,23 @@ export async function loadConfigFromFile(configPath?: string): Promise<Partial<L
         return await loadBunConfig(path);
       }
     } catch (error) {
-      // Continue to the next path
+      // Continue to the next path if file doesn't exist or can't be loaded
+      void error; // Suppress unused variable warning
     }
   }
-  
+
   return {};
 }
 
 async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
   try {
-    const fs = await import('fs/promises');
-    const pathModule = await import('path');
-    
+    const fs = await import('node:fs/promises');
+    const pathModule = await import('node:path');
+
     if (path.endsWith('.json')) {
       const content = await fs.readFile(path, 'utf-8');
       const parsed = JSON.parse(content);
-      
+
       if (path === 'package.json') {
         return parsed.logan || {};
       }
@@ -103,17 +106,19 @@ async function loadNodeConfig(path: string): Promise<Partial<LoggerConfig>> {
     }
   } catch (error) {
     // File doesn't exist or can't be parsed
+    void error; // Suppress unused variable warning
   }
-  
+
   return {};
 }
 
 async function loadDenoConfig(path: string): Promise<Partial<LoggerConfig>> {
   try {
     if (path.endsWith('.json')) {
+      // biome-ignore lint/suspicious/noExplicitAny: Deno runtime not in TS types
       const content = await (globalThis as any).Deno.readTextFile(path);
       const parsed = JSON.parse(content);
-      
+
       if (path === 'package.json') {
         return parsed.logan || {};
       }
@@ -124,8 +129,9 @@ async function loadDenoConfig(path: string): Promise<Partial<LoggerConfig>> {
     }
   } catch (error) {
     // File doesn't exist or can't be parsed
+    void error; // Suppress unused variable warning
   }
-  
+
   return {};
 }
 
@@ -155,14 +161,18 @@ function stringToLogLevel(level: string): LogLevel {
 
 export function mergeConfigs(...configs: Partial<LoggerConfig>[]): LoggerConfig {
   const defaultConfig = getDefaultConfig();
-  
-  return configs.reduce<LoggerConfig>((merged, config) => ({
-    ...merged,
-    ...config,
-    metadata: {
-      ...merged.metadata,
-      ...config.metadata
-    },
-    transports: config.transports || merged.transports
-  }), defaultConfig);
+
+  return configs.reduce<LoggerConfig>(
+    (merged, config) => ({
+      // biome-ignore lint/performance/noAccumulatingSpread: Config merging is not performance-critical, readability preferred
+      ...merged,
+      ...config,
+      metadata: {
+        ...merged.metadata,
+        ...config.metadata,
+      },
+      transports: config.transports || merged.transports,
+    }),
+    defaultConfig
+  );
 }

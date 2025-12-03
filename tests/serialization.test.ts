@@ -12,7 +12,7 @@ describe('Serialization Utilities', () => {
     it('should handle circular references', () => {
       const obj: any = { name: 'test' };
       obj.self = obj;
-      
+
       const result = safeStringify(obj);
       expect(result).toContain('"name":"test"');
       expect(result).toContain('"self":"[Circular]"');
@@ -21,10 +21,10 @@ describe('Serialization Utilities', () => {
     it('should serialize Error objects with stack traces', () => {
       const error = new Error('Test error');
       error.stack = 'Error: Test error\n    at test.js:1:1';
-      
+
       const result = safeStringify(error);
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.name).toBe('Error');
       expect(parsed.message).toBe('Test error');
       expect(parsed.stack).toBe('Error: Test error\n    at test.js:1:1');
@@ -34,10 +34,10 @@ describe('Serialization Utilities', () => {
       const error = new Error('Test error') as any;
       error.code = 'CUSTOM_ERROR';
       error.details = { foo: 'bar' };
-      
+
       const result = safeStringify(error);
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.code).toBe('CUSTOM_ERROR');
       expect(parsed.details).toEqual({ foo: 'bar' });
     });
@@ -45,10 +45,12 @@ describe('Serialization Utilities', () => {
     it('should handle functions', () => {
       const obj = {
         name: 'test',
-        handler: function namedFunction() { return 'test'; },
-        anonymous: () => 'anonymous'
+        handler: function namedFunction() {
+          return 'test';
+        },
+        anonymous: () => 'anonymous',
       };
-      
+
       const result = safeStringify(obj);
       expect(result).toContain('"handler":"[Function: namedFunction]"');
       expect(result).toContain('"anonymous":"[Function: anonymous]"');
@@ -57,9 +59,9 @@ describe('Serialization Utilities', () => {
     it('should handle undefined values', () => {
       const obj = {
         name: 'test',
-        undefinedValue: undefined
+        undefinedValue: undefined,
       };
-      
+
       const result = safeStringify(obj);
       expect(result).toContain('"undefinedValue":"[undefined]"');
     });
@@ -67,9 +69,9 @@ describe('Serialization Utilities', () => {
     it('should handle BigInt values', () => {
       const obj = {
         name: 'test',
-        bigNumber: BigInt(9007199254740991)
+        bigNumber: BigInt(9007199254740991),
       };
-      
+
       const result = safeStringify(obj);
       expect(result).toContain('"bigNumber":"[BigInt: 9007199254740991]"');
     });
@@ -78,9 +80,9 @@ describe('Serialization Utilities', () => {
       const sym = Symbol('test');
       const obj = {
         name: 'test',
-        symbol: sym
+        symbol: sym,
       };
-      
+
       const result = safeStringify(obj);
       expect(result).toContain('"symbol":"[Symbol: Symbol(test)]"');
     });
@@ -88,7 +90,7 @@ describe('Serialization Utilities', () => {
     it('should handle nested circular references', () => {
       const parent: any = { name: 'parent' };
       parent.child = { name: 'child', parent };
-      
+
       const result = safeStringify(parent);
       expect(result).toContain('"name":"parent"');
       expect(result).toContain('"name":"child"');
@@ -98,7 +100,7 @@ describe('Serialization Utilities', () => {
     it('should handle arrays with circular references', () => {
       const arr: any[] = [1, 2, 3];
       arr.push(arr);
-      
+
       const result = safeStringify(arr);
       expect(result).toContain('[1,2,3,"[Circular]"]');
     });
@@ -118,11 +120,11 @@ describe('Serialization Utilities', () => {
         token: 'abc123',
         secret: 'my-secret',
         apiKey: 'key123',
-        auth: 'bearer token'
+        auth: 'bearer token',
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.username).toBe('john');
       expect(filtered.password).toBe('[REDACTED]');
       expect(filtered.token).toBe('[REDACTED]');
@@ -135,11 +137,11 @@ describe('Serialization Utilities', () => {
       const data = {
         username: 'john',
         customSecret: 'secret123',
-        normalField: 'normal'
+        normalField: 'normal',
       };
-      
+
       const filtered = filterSensitiveData(data, ['customSecret']);
-      
+
       expect(filtered.username).toBe('john');
       expect(filtered.customSecret).toBe('[REDACTED]');
       expect(filtered.normalField).toBe('normal');
@@ -149,11 +151,11 @@ describe('Serialization Utilities', () => {
       const data = {
         PASSWORD: 'secret123',
         Token: 'abc123',
-        SECRET_KEY: 'my-secret'
+        SECRET_KEY: 'my-secret',
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.PASSWORD).toBe('[REDACTED]');
       expect(filtered.Token).toBe('[REDACTED]');
       expect(filtered.SECRET_KEY).toBe('[REDACTED]');
@@ -163,16 +165,16 @@ describe('Serialization Utilities', () => {
       const data = {
         user: {
           name: 'john',
-          password: 'secret123'
+          password: 'secret123',
         },
         config: {
           apiKey: 'key123',
-          timeout: 5000
-        }
+          timeout: 5000,
+        },
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.user.name).toBe('john');
       expect(filtered.user.password).toBe('[REDACTED]');
       expect(filtered.config.apiKey).toBe('[REDACTED]');
@@ -183,12 +185,12 @@ describe('Serialization Utilities', () => {
       const data = {
         users: [
           { name: 'john', password: 'secret1' },
-          { name: 'jane', password: 'secret2' }
-        ]
+          { name: 'jane', password: 'secret2' },
+        ],
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.users[0].name).toBe('john');
       expect(filtered.users[0].password).toBe('[REDACTED]');
       expect(filtered.users[1].name).toBe('jane');
@@ -199,11 +201,11 @@ describe('Serialization Utilities', () => {
       const data = {
         nullValue: null,
         undefinedValue: undefined,
-        password: 'secret'
+        password: 'secret',
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.nullValue).toBe(null);
       expect(filtered.undefinedValue).toBe(undefined);
       expect(filtered.password).toBe('[REDACTED]');
@@ -221,13 +223,13 @@ describe('Serialization Utilities', () => {
         level1: {
           level2: {
             password: 'secret',
-            data: 'normal'
-          }
-        }
+            data: 'normal',
+          },
+        },
       };
-      
+
       const filtered = filterSensitiveData(data);
-      
+
       expect(filtered.level1.level2.password).toBe('[REDACTED]');
       expect(filtered.level1.level2.data).toBe('normal');
       expect(typeof filtered.level1).toBe('object');
@@ -239,13 +241,13 @@ describe('Serialization Utilities', () => {
     it('should serialize Error objects correctly', () => {
       const error = new Error('Test error message');
       error.stack = 'Error: Test error message\n    at test (file.js:1:1)';
-      
+
       const serialized = serializeError(error);
-      
+
       expect(serialized).toEqual({
         name: 'Error',
         message: 'Test error message',
-        stack: 'Error: Test error message\n    at test (file.js:1:1)'
+        stack: 'Error: Test error message\n    at test (file.js:1:1)',
       });
     });
 
@@ -253,9 +255,9 @@ describe('Serialization Utilities', () => {
       const error = new Error('Custom error') as any;
       error.code = 'CUSTOM_ERROR';
       error.statusCode = 500;
-      
+
       const serialized = serializeError(error);
-      
+
       expect(serialized.name).toBe('Error');
       expect(serialized.message).toBe('Custom error');
       expect(serialized.code).toBe('CUSTOM_ERROR');
@@ -266,13 +268,13 @@ describe('Serialization Utilities', () => {
     it('should handle different error types', () => {
       const typeError = new TypeError('Type error');
       const rangeError = new RangeError('Range error');
-      
+
       const serializedType = serializeError(typeError);
       const serializedRange = serializeError(rangeError);
-      
+
       expect(serializedType.name).toBe('TypeError');
       expect(serializedType.message).toBe('Type error');
-      
+
       expect(serializedRange.name).toBe('RangeError');
       expect(serializedRange.message).toBe('Range error');
     });
@@ -289,11 +291,11 @@ describe('Serialization Utilities', () => {
       const errorLike = {
         name: 'CustomError',
         message: 'Custom message',
-        stack: 'stack trace'
+        stack: 'stack trace',
       };
-      
+
       const serialized = serializeError(errorLike);
-      
+
       expect(serialized).toEqual(errorLike);
     });
   });
