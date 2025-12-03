@@ -1,8 +1,9 @@
 import { BaseLogger } from '../core/logger.ts';
-import { LogEntry, LogLevel, LoggerConfig } from '../core/types.ts';
+import { type LogEntry, type LoggerConfig, LogLevel } from '../core/types.ts';
 import { safeStringify } from '../utils/serialization.ts';
 
 export class NodeLogger extends BaseLogger {
+  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
   private winston?: any;
 
   constructor(config: Partial<LoggerConfig> = {}) {
@@ -21,6 +22,7 @@ export class NodeLogger extends BaseLogger {
     }
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
   private createWinstonLogger(winston: any): any {
     const logFormat = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -32,6 +34,7 @@ export class NodeLogger extends BaseLogger {
     const consoleFormat = winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp({ format: 'HH:mm:ss' }),
+      // biome-ignore lint/suspicious/noExplicitAny: Winston format callback parameter has dynamic shape
       winston.format.printf(({ timestamp, level, message, ...meta }: any) => {
         const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
         return `${timestamp} [${level}]: ${message} ${metaStr}`;

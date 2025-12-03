@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LogLevel, LoggerConfig } from '../src/core/types.ts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type LoggerConfig, LogLevel } from '../src/core/types.ts';
 
 // Mock the runtime detection to control test environment
 vi.mock('../src/utils/runtime.ts', () => ({
@@ -10,12 +10,18 @@ vi.mock('../src/utils/runtime.ts', () => ({
       fileSystem: true,
       colorSupport: true,
       processInfo: true,
-      streams: true
-    }
-  })
+      streams: true,
+    },
+  }),
 }));
 
-import { LoggerFactory, createLogger, createLoggerForEnvironment, stringToLogLevel, logLevelToString } from '../src/core/factory.ts';
+import {
+  createLogger,
+  createLoggerForEnvironment,
+  LoggerFactory,
+  logLevelToString,
+  stringToLogLevel,
+} from '../src/core/factory.ts';
 
 describe('Logger Factory', () => {
   beforeEach(() => {
@@ -25,7 +31,7 @@ describe('Logger Factory', () => {
   describe('LoggerFactory.create', () => {
     it('should create a logger with default configuration', () => {
       const logger = LoggerFactory.create();
-      
+
       expect(logger).toBeDefined();
       expect(logger.debug).toBeTypeOf('function');
       expect(logger.info).toBeTypeOf('function');
@@ -38,76 +44,81 @@ describe('Logger Factory', () => {
       const config: Partial<LoggerConfig> = {
         level: LogLevel.WARN,
         timestamp: false,
-        colorize: false
+        colorize: false,
       };
-      
+
       const logger = LoggerFactory.create(config);
-      
+
       expect(logger.getLevel()).toBe(LogLevel.WARN);
     });
 
     it('should merge user config with defaults', () => {
       const config: Partial<LoggerConfig> = {
-        level: LogLevel.ERROR
+        level: LogLevel.ERROR,
       };
-      
+
       const logger = LoggerFactory.create(config);
-      
+
       expect(logger.getLevel()).toBe(LogLevel.ERROR);
       // Other default values should still be present
     });
 
     it('should handle empty configuration object', () => {
       const logger = LoggerFactory.create({});
-      
+
       expect(logger).toBeDefined();
       expect(logger.getLevel()).toBe(LogLevel.INFO);
     });
 
     it.skip('should create different logger types based on runtime', async () => {
       const { detectRuntime } = await import('../src/utils/runtime');
-      
+
       // Test Node.js runtime
       vi.mocked(detectRuntime).mockReturnValue({
         name: 'node',
         version: '20.0.0',
-        capabilities: { fileSystem: true, colorSupport: true, processInfo: true, streams: true }
+        capabilities: { fileSystem: true, colorSupport: true, processInfo: true, streams: true },
       });
-      
+
       const nodeLogger = LoggerFactory.create();
       expect(nodeLogger).toBeDefined();
-      
+
       // Test browser runtime
       vi.mocked(detectRuntime).mockReturnValue({
         name: 'browser',
         version: 'Chrome/120.0.0',
-        capabilities: { fileSystem: false, colorSupport: true, processInfo: false, streams: false }
+        capabilities: { fileSystem: false, colorSupport: true, processInfo: false, streams: false },
       });
-      
+
       const browserLogger = LoggerFactory.create();
       expect(browserLogger).toBeDefined();
-      
+
       // Test Bun runtime (should use Node.js adapter)
       vi.mocked(detectRuntime).mockReturnValue({
         name: 'bun',
         version: '1.0.25',
-        capabilities: { fileSystem: true, colorSupport: true, processInfo: true, streams: true }
+        capabilities: { fileSystem: true, colorSupport: true, processInfo: true, streams: true },
       });
-      
+
       const bunLogger = LoggerFactory.create();
       expect(bunLogger).toBeDefined();
     });
 
     it.skip('should handle unknown runtime gracefully', async () => {
       const { detectRuntime } = await import('../src/utils/runtime');
-      
+
       vi.mocked(detectRuntime).mockReturnValue({
         name: 'unknown',
-        capabilities: { fileSystem: false, colorSupport: false, processInfo: false, streams: false }
+        capabilities: {
+          fileSystem: false,
+          colorSupport: false,
+          processInfo: false,
+          streams: false,
+        },
       });
-      
+
       const logger = LoggerFactory.create();
-      
+
       expect(logger).toBeDefined();
       // Should fallback to browser logger for unknown runtimes
     });
@@ -117,9 +128,9 @@ describe('Logger Factory', () => {
     it('should create a child logger with additional metadata', () => {
       const parentLogger = LoggerFactory.create();
       const metadata = { service: 'auth', requestId: '123' };
-      
+
       const childLogger = LoggerFactory.createChild(parentLogger, metadata);
-      
+
       expect(childLogger).toBeDefined();
       expect(childLogger).not.toBe(parentLogger);
       expect(childLogger.debug).toBeTypeOf('function');
@@ -127,12 +138,12 @@ describe('Logger Factory', () => {
 
     it('should preserve parent logger configuration in child', () => {
       const config: Partial<LoggerConfig> = {
-        level: LogLevel.WARN
+        level: LogLevel.WARN,
       };
-      
+
       const parentLogger = LoggerFactory.create(config);
       const childLogger = LoggerFactory.createChild(parentLogger, { service: 'test' });
-      
+
       expect(childLogger.getLevel()).toBe(LogLevel.WARN);
     });
   });
@@ -141,7 +152,7 @@ describe('Logger Factory', () => {
     it('should work as alias for LoggerFactory.create', () => {
       const logger1 = LoggerFactory.create();
       const logger2 = createLogger();
-      
+
       expect(logger1.getLevel()).toBe(logger2.getLevel());
       expect(typeof logger1.debug).toBe(typeof logger2.debug);
     });
@@ -149,17 +160,17 @@ describe('Logger Factory', () => {
     it('should accept configuration parameters', () => {
       const config: Partial<LoggerConfig> = {
         level: LogLevel.DEBUG,
-        colorize: false
+        colorize: false,
       };
-      
+
       const logger = createLogger(config);
-      
+
       expect(logger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should work without parameters', () => {
       const logger = createLogger();
-      
+
       expect(logger).toBeDefined();
       expect(logger.getLevel()).toBe(LogLevel.INFO);
     });
@@ -175,89 +186,89 @@ describe('Logger Factory', () => {
 
     it('should set ERROR level for production environment', () => {
       process.env.NODE_ENV = 'production';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.ERROR);
     });
 
     it('should set WARN level for staging environment', () => {
       process.env.NODE_ENV = 'staging';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.WARN);
     });
 
     it('should set WARN level for test environment', () => {
       process.env.NODE_ENV = 'test';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.WARN);
     });
 
     it('should set DEBUG level for development environment', () => {
       process.env.NODE_ENV = 'development';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should set DEBUG level for dev environment', () => {
       process.env.NODE_ENV = 'dev';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should default to INFO level for unknown environments', () => {
       process.env.NODE_ENV = 'unknown';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.INFO);
     });
 
     it('should use NEXT_PUBLIC_APP_ENV as fallback', () => {
       process.env.NEXT_PUBLIC_APP_ENV = 'production';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.ERROR);
     });
 
     it('should use ENVIRONMENT as secondary fallback', () => {
       process.env.ENVIRONMENT = 'development';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       expect(logger.getLevel()).toBe(LogLevel.DEBUG);
     });
 
     it('should set appropriate format for environment', () => {
       process.env.NODE_ENV = 'production';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       // In production, should use JSON format (we can't easily test this without exposing internals)
       expect(logger).toBeDefined();
     });
 
     it('should disable colorize in production', () => {
       process.env.NODE_ENV = 'production';
-      
+
       const logger = createLoggerForEnvironment();
-      
+
       // Should create logger with colorize: false for production
       expect(logger).toBeDefined();
     });
 
     it('should enable timestamp by default', () => {
       const logger = createLoggerForEnvironment();
-      
+
       // Should create logger with timestamp: true
       expect(logger).toBeDefined();
     });
@@ -309,8 +320,8 @@ describe('Logger Factory', () => {
     describe('Round-trip conversion', () => {
       it('should maintain consistency in round-trip conversion', () => {
         const levels = ['debug', 'info', 'warn', 'error', 'silent'];
-        
-        levels.forEach(levelString => {
+
+        levels.forEach((levelString) => {
           const level = stringToLogLevel(levelString);
           const backToString = logLevelToString(level);
           expect(backToString).toBe(levelString);
@@ -322,24 +333,22 @@ describe('Logger Factory', () => {
   describe('Factory integration with configuration', () => {
     it('should respect metadata merging in factory', () => {
       const config: Partial<LoggerConfig> = {
-        metadata: { service: 'api', version: '1.0' }
+        metadata: { service: 'api', version: '1.0' },
       };
-      
+
       const logger = LoggerFactory.create(config);
-      
+
       expect(logger).toBeDefined();
       // Metadata should be merged with defaults
     });
 
     it('should handle transport configuration', () => {
       const config: Partial<LoggerConfig> = {
-        transports: [
-          { type: 'console', options: { colorize: false } }
-        ]
+        transports: [{ type: 'console', options: { colorize: false } }],
       };
-      
+
       const logger = LoggerFactory.create(config);
-      
+
       expect(logger).toBeDefined();
     });
 
@@ -353,17 +362,17 @@ describe('Logger Factory', () => {
           service: 'test-service',
           environment: 'test',
           nested: {
-            deep: 'value'
-          }
+            deep: 'value',
+          },
         },
         transports: [
           { type: 'console', level: LogLevel.ERROR, options: { colorize: true } },
-          { type: 'file', options: { filename: 'test.log' } }
-        ]
+          { type: 'file', options: { filename: 'test.log' } },
+        ],
       };
-      
+
       const logger = LoggerFactory.create(config);
-      
+
       expect(logger).toBeDefined();
       expect(logger.getLevel()).toBe(LogLevel.WARN);
     });

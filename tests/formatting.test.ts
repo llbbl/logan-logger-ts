@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { formatLogEntry, formatLevel } from '../src/utils/formatting.ts';
-import { LogLevel, LogEntry } from '../src/core/types.ts';
+import { describe, expect, it } from 'vitest';
+import { type LogEntry, LogLevel } from '../src/core/types.ts';
+import { formatLevel, formatLogEntry } from '../src/utils/formatting.ts';
 
 describe('Formatting utilities', () => {
   describe('formatLogEntry', () => {
@@ -9,31 +9,35 @@ describe('Formatting utilities', () => {
       level: LogLevel.INFO,
       message: 'Test message',
       metadata: { userId: 123, action: 'login' },
-      runtime: 'node'
+      runtime: 'node',
     };
 
     it('should format entry as text by default', () => {
       const result = formatLogEntry(mockEntry);
-      
-      expect(result).toBe('[2024-01-01T12:00:00.000Z] INFO: Test message {"userId":123,"action":"login"}');
+
+      expect(result).toBe(
+        '[2024-01-01T12:00:00.000Z] INFO: Test message {"userId":123,"action":"login"}'
+      );
     });
 
     it('should format entry as text when explicitly specified', () => {
       const result = formatLogEntry(mockEntry, 'text');
-      
-      expect(result).toBe('[2024-01-01T12:00:00.000Z] INFO: Test message {"userId":123,"action":"login"}');
+
+      expect(result).toBe(
+        '[2024-01-01T12:00:00.000Z] INFO: Test message {"userId":123,"action":"login"}'
+      );
     });
 
     it('should format entry as JSON', () => {
       const result = formatLogEntry(mockEntry, 'json');
       const parsed = JSON.parse(result);
-      
+
       expect(parsed).toEqual({
         timestamp: '2024-01-01T12:00:00.000Z',
         level: 'info',
         message: 'Test message',
         metadata: { userId: 123, action: 'login' },
-        runtime: 'node'
+        runtime: 'node',
       });
     });
 
@@ -42,7 +46,7 @@ describe('Formatting utilities', () => {
         timestamp: new Date('2024-01-01T12:00:00.000Z'),
         level: LogLevel.WARN,
         message: 'Warning message',
-        runtime: 'browser'
+        runtime: 'browser',
       };
 
       const textResult = formatLogEntry(entryWithoutMeta, 'text');
@@ -63,7 +67,7 @@ describe('Formatting utilities', () => {
           timestamp: new Date('2024-01-01T12:00:00.000Z'),
           level,
           message: 'Test',
-          runtime: 'node'
+          runtime: 'node',
         };
 
         const textResult = formatLogEntry(entry, 'text');
@@ -93,12 +97,14 @@ describe('Formatting utilities', () => {
     it('should format level names with colors when colorize is true', () => {
       const coloredInfo = formatLevel(LogLevel.INFO, true);
       const coloredError = formatLevel(LogLevel.ERROR, true);
-      
+
       expect(coloredInfo).toContain('INFO');
       expect(coloredError).toContain('ERROR');
-      
+
       // Should contain ANSI color codes
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       expect(coloredInfo).toMatch(/\x1b\[\d+m.*INFO.*\x1b\[0m/);
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       expect(coloredError).toMatch(/\x1b\[\d+m.*ERROR.*\x1b\[0m/);
     });
 
@@ -107,16 +113,20 @@ describe('Formatting utilities', () => {
       const info = formatLevel(LogLevel.INFO, true);
       const warn = formatLevel(LogLevel.WARN, true);
       const error = formatLevel(LogLevel.ERROR, true);
-      
+
       // Each should have different color codes
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       const debugColor = debug.match(/\x1b\[(\d+)m/)?.[1];
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       const infoColor = info.match(/\x1b\[(\d+)m/)?.[1];
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       const warnColor = warn.match(/\x1b\[(\d+)m/)?.[1];
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: Testing ANSI escape codes for terminal colors
       const errorColor = error.match(/\x1b\[(\d+)m/)?.[1];
-      
+
       expect(debugColor).toBe('36'); // Cyan
-      expect(infoColor).toBe('32');  // Green
-      expect(warnColor).toBe('33');  // Yellow
+      expect(infoColor).toBe('32'); // Green
+      expect(warnColor).toBe('33'); // Yellow
       expect(errorColor).toBe('31'); // Red
     });
   });

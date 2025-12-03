@@ -1,4 +1,4 @@
-import { RuntimeInfo, RuntimeName, RuntimeCapabilities } from '../core/types.ts';
+import type { RuntimeCapabilities, RuntimeInfo, RuntimeName } from '../core/types.ts';
 
 /**
  * Detects the current JavaScript runtime environment and its capabilities.
@@ -17,7 +17,7 @@ export function detectRuntime(): RuntimeInfo {
   return {
     name,
     version,
-    capabilities
+    capabilities,
   };
 }
 
@@ -61,20 +61,20 @@ function getRuntimeVersion(runtime: RuntimeName): string | undefined {
     case 'deno':
       // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
       return typeof (globalThis as any).Deno !== 'undefined'
-        // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
-        ? (globalThis as any).Deno.version?.deno
+        ? // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
+          (globalThis as any).Deno.version?.deno
         : undefined;
 
     case 'bun':
       // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
       return typeof (globalThis as any).Bun !== 'undefined'
-        // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
-        ? (globalThis as any).Bun.version
+        ? // biome-ignore lint/suspicious/noExplicitAny: Runtime-specific global not in TS types
+          (globalThis as any).Bun.version
         : undefined;
-    
+
     case 'browser':
       return typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
-    
+
     default:
       return undefined;
   }
@@ -87,47 +87,47 @@ function getRuntimeCapabilities(runtime: RuntimeName): RuntimeCapabilities {
         fileSystem: true,
         colorSupport: true,
         processInfo: true,
-        streams: true
+        streams: true,
       };
-    
+
     case 'deno':
       return {
         fileSystem: true,
         colorSupport: true,
         processInfo: true,
-        streams: true
+        streams: true,
       };
-    
+
     case 'bun':
       return {
         fileSystem: true,
         colorSupport: true,
         processInfo: true,
-        streams: true
+        streams: true,
       };
-    
+
     case 'browser':
       return {
         fileSystem: false,
         colorSupport: true, // CSS styling in console
         processInfo: false,
-        streams: false
+        streams: false,
       };
-    
+
     case 'webworker':
       return {
         fileSystem: false,
         colorSupport: false,
         processInfo: false,
-        streams: false
+        streams: false,
       };
-    
+
     default:
       return {
         fileSystem: false,
         colorSupport: false,
         processInfo: false,
-        streams: false
+        streams: false,
       };
   }
 }

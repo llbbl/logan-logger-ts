@@ -1,23 +1,23 @@
 // Simple Deno environment test
 // @ts-expect-error - Deno standard library import
-import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { assertEquals, assertExists } from 'https://deno.land/std@0.208.0/assert/mod.ts';
 
 // Declare Deno global for TypeScript (not available in Node.js environment)
 declare const Deno: any;
 
-Deno.test("Deno runtime environment", () => {
+Deno.test('Deno runtime environment', () => {
   // Test that we can detect we're running in Deno
-  const isDeno = typeof Deno !== "undefined";
+  const isDeno = typeof Deno !== 'undefined';
   assertEquals(isDeno, true);
 });
 
-Deno.test("Deno has required APIs", () => {
+Deno.test('Deno has required APIs', () => {
   // Test that we can access Deno APIs
   assertExists(Deno.env);
   assertExists(Deno.version);
 });
 
-Deno.test("Basic console functionality", () => {
+Deno.test('Basic console functionality', () => {
   // Test basic console functionality that our logger would use
   assertExists(console.log);
   assertExists(console.error);
@@ -25,8 +25,8 @@ Deno.test("Basic console functionality", () => {
   assertExists(console.info);
 
   // Test that we can call console methods without errors
-  console.log("Deno test log message");
-  console.info("Deno test info message");
-  console.warn("Deno test warn message");
-  console.error("Deno test error message");
+  console.log('Deno test log message');
+  console.info('Deno test info message');
+  console.warn('Deno test warn message');
+  console.error('Deno test error message');
 });

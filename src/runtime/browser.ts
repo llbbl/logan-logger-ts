@@ -1,5 +1,5 @@
 import { BaseLogger } from '../core/logger.ts';
-import { LogEntry, LogLevel, LoggerConfig } from '../core/types.ts';
+import { type LogEntry, type LoggerConfig, LogLevel } from '../core/types.ts';
 import { safeStringify } from '../utils/serialization.ts';
 
 export class BrowserLogger extends BaseLogger {
@@ -66,11 +66,13 @@ export class BrowserLogger extends BaseLogger {
 
   private shouldLogInProduction(): boolean {
     // Check various environment indicators
-    const env = 
+    const env =
+      // biome-ignore lint/suspicious/noExplicitAny: Browser environment may have process global from bundler
       (globalThis as any).process?.env?.NODE_ENV ||
+      // biome-ignore lint/suspicious/noExplicitAny: Browser environment may have process global from bundler
       (globalThis as any).process?.env?.NEXT_PUBLIC_APP_ENV ||
       'development';
-    
+
     return env !== 'production' || this.level <= LogLevel.ERROR;
   }
 
@@ -79,7 +81,7 @@ export class BrowserLogger extends BaseLogger {
     if (!this.shouldLogInProduction() && level < LogLevel.ERROR) {
       return false;
     }
-    
+
     return super.shouldLog(level);
   }
 }
@@ -119,6 +121,7 @@ export class ConsoleGroupLogger extends BrowserLogger {
     console.timeEnd(label);
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: Console method accepts arbitrary metadata
   trace(message: string, metadata?: any): void {
     console.trace(message, metadata);
   }
@@ -131,6 +134,7 @@ export class ConsoleGroupLogger extends BrowserLogger {
     console.countReset(label);
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: Console.table accepts arbitrary tabular data
   table(data: any): void {
     console.table(data);
   }
@@ -153,7 +157,7 @@ export class PerformanceLogger extends BrowserLogger {
           const entry = entries[entries.length - 1];
           this.info(`Performance: ${name}`, {
             duration: entry.duration,
-            startTime: entry.startTime
+            startTime: entry.startTime,
           });
         }
       } catch (error) {

@@ -12,11 +12,7 @@
     "inlineSourceMap": false
   },
   "publish": {
-    "include": [
-      "src",
-      "README.md",
-      "LICENSE"
-    ]
+    "include": ["src", "README.md", "LICENSE"]
   },
   "keywords": [
     "logging",
