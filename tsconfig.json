@@ -23,7 +23,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "allowImportingTsExtensions": true,
     "types": ["node", "vitest/globals"]
   },
