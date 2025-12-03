@@ -1,16 +1,21 @@
 {
   "name": "@logan/logger",
-  "version": "1.1.11",
+  "version": "1.1.12",
   "exports": "./src/index.ts",
   "compilerOptions": {
     "allowJs": true,
-    "lib": ["deno.window", "dom"],
+    "lib": [
+      "deno.window",
+      "dom"
+    ],
     "strict": true,
     "sourceMap": false,
     "inlineSourceMap": false
   },
   "test": {
-    "include": ["tests/**/*.test.ts"]
+    "include": [
+      "tests/**/*.test.ts"
+    ]
   },
   "tasks": {
     "test": "deno test --allow-read --allow-env",
