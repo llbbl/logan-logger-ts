@@ -4,12 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    pool: 'vmThreads',
     include: [
       'src/**/*.{test,spec}.{js,ts}',
       'tests/**/*.{test,spec}.{js,ts}'
