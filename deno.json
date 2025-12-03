@@ -8,7 +8,9 @@
       "deno.window",
       "dom"
     ],
-    "strict": true
+    "strict": true,
+    "sourceMap": false,
+    "inlineSourceMap": false
   },
   "test": {
     "include": [
