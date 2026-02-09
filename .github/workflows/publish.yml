@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Required for JSR publishing
+      id-token: write # Required for npm OIDC and JSR publishing
 
     steps:
       - name: Checkout code
@@ -42,11 +42,12 @@ jobs:
       - name: Build package
         run: pnpm build
 
-      # Publish to npm
+      - name: Install latest npm
+        run: npm install -g npm@latest
+
+      # Publish to npm with OIDC provenance
       - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
 
       # Publish to JSR
       - name: Publish to JSR
