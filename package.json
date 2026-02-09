@@ -88,5 +88,9 @@
     "overrides": {
       "esbuild": ">=0.25.0"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/llbbl/logan-logger-ts.git"
   }
 }
