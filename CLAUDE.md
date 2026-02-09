@@ -12,59 +12,61 @@ Logan Logger (`logan-logger`) is a universal TypeScript logging library designed
 
 ## Development Commands
 
-### Package Manager & Version Management
+### Package Manager & Task Runner
 - Use `pnpm` as the primary package manager
-- Use `bun` for running scripts and development: `bun run src/index.ts`
-- **Version bumping**: Use `make bump-patch|minor|major` to update all config files
+- Use `just` as the task runner (run `just` to see all commands)
+- Use `bun` for running scripts: `bun run src/index.ts`
 
 ### Core Development
 ```bash
 # Install dependencies
-pnpm install
+just install
 
 # Development/testing
-bun run src/index.ts          # Run development version
-pnpm dev                      # Same as above
+just dev              # Run development version
+just test             # Run tests (watch mode)
+just test-run         # Run tests once
 
 # Building
-pnpm build                    # Full build (clean + lib)
-pnpm build:clean              # Remove dist folder
-pnpm build:lib                # Vite build only
-
-# Testing
-pnpm test                     # Watch mode
-pnpm test:run                 # Single run
-pnpm test:ui                  # UI interface
-vitest run tests/specific.test.ts  # Single test file
+just build            # Full build
+just clean            # Remove dist folder
 
 # Code Quality
-pnpm typecheck               # TypeScript checking
-pnpm lint                    # ESLint
+just typecheck        # TypeScript checking
+just lint             # Biome linting
+just check            # Run all checks (lint + typecheck + test)
 ```
 
-## Publishing Commands
+## Publishing & Releases
 
-### Version Management
+### Automatic Releases
+Every merged PR automatically triggers a **patch release**:
+1. PR merged → `auto-release.yml` bumps patch version
+2. Tag created → `publish.yml` publishes to npm and JSR
+
+### Manual Version Bumping
 ```bash
-# Bump versions across all config files
-make bump-patch     # 1.1.9 → 1.1.10
-make bump-minor     # 1.1.9 → 1.2.0
-make bump-major     # 1.1.9 → 2.0.0
+# Bump versions across all config files (package.json, jsr.json, deno.json)
+just bump-patch     # 1.1.13 → 1.1.14
+just bump-minor     # 1.1.13 → 1.2.0
+just bump-major     # 1.1.13 → 2.0.0
 
-# Manual version setting
-make set-version    # Prompts for specific version
+# One-command release (bump + push)
+just release-patch
+just release-minor
+just release-major
 
 # Check current versions
-make show-versions
+just version         # Show current version
+just versions        # Show all config file versions
 
 # Sync versions if out of sync
-make version-sync
+just version-sync
 ```
 
 ### Publishing Process
-- Use Makefile to bump versions (updates package.json, jsr.json, deno.json)
-- Push to main branch with tags: `git push origin main && git push origin --tags`
-- GitHub Actions automatically publishes to both npm and JSR
+- Releases are triggered by tags (v*)
+- GitHub Actions publishes to both npm and JSR
 - Package published as `logan-logger` on npm and `@logan/logger` on JSR
 
 ## Architecture Overview
