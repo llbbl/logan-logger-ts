@@ -1,6 +1,6 @@
 {
   "name": "@logan/logger",
-  "version": "1.1.16",
+  "version": "1.1.15",
   "exports": "./src/index.ts",
   "compilerOptions": {
     "allowJs": true,
