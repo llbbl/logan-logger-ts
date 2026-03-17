@@ -1,66 +1,69 @@
 name: Auto Release
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 permissions:
   contents: write
+  id-token: write # Required for npm OIDC and JSR publishing
 
 jobs:
-  auto-tag:
-    name: Auto Tag Patch Release
-    # Only run if PR was merged (not just closed)
-    if: github.event.pull_request.merged == true
+  version:
+    name: Determine Version
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    outputs:
+      tag: ${{ steps.version.outputs.next }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Get current version
-        id: current
-        run: |
-          VERSION=$(jq -r '.version' package.json)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
-      - name: Calculate next patch version
-        id: next
+      - name: Determine next version
+        id: version
         run: |
-          CURRENT="${{ steps.current.outputs.version }}"
-          # Split version into parts
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          # Increment patch
-          NEXT_PATCH=$((PATCH + 1))
-          NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
-          echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-          echo "Next version: $NEXT_VERSION"
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest=$latest_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Check if tag already exists
-        id: check_tag
-        run: |
-          if git rev-parse "v${{ steps.next.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v${{ steps.next.outputs.version }} already exists, skipping"
+          version="${latest_tag#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+
+          commits=$(git log "$latest_tag"..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+
+          if echo "$commits" | grep -qE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|^refactor(\(.+\))?!:|BREAKING CHANGE"; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif echo "$commits" | grep -qE "^feat(\(.+\))?:"; then
+            minor=$((minor + 1))
+            patch=0
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            patch=$((patch + 1))
           fi
 
-      - name: Update all config files
-        if: steps.check_tag.outputs.exists == 'false'
+          next="v${major}.${minor}.${patch}"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+          echo "Next version: $next (from $latest_tag)"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update versions
         run: |
-          NEW_VERSION="${{ steps.next.outputs.version }}"
+          NEW_VERSION="${{ steps.version.outputs.version }}"
           # Update package.json
           jq --arg v "$NEW_VERSION" '.version = $v' package.json > package.json.tmp
           mv package.json.tmp package.json
@@ -75,29 +78,80 @@ jobs:
           echo "  jsr.json: $(jq -r '.version' jsr.json)"
           echo "  deno.json: $(jq -r '.version' deno.json)"
 
-      - name: Commit version bump
-        if: steps.check_tag.outputs.exists == 'false'
+      - name: Verify
         run: |
-          git add package.json jsr.json deno.json
-          git commit -m "chore(release): bump version to ${{ steps.next.outputs.version }}"
-          git push
+          pnpm typecheck
+          pnpm lint
+          pnpm test --run
 
-      - name: Create and push tag
-        if: steps.check_tag.outputs.exists == 'false'
+      - name: Commit and tag
+        env:
+          TAG: ${{ steps.version.outputs.next }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git tag "v${{ steps.next.outputs.version }}"
-          git push origin "v${{ steps.next.outputs.version }}"
-          echo "Created tag v${{ steps.next.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): bump version to v$VERSION"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin main --follow-tags
 
-      - name: Summary
-        run: |
-          if [[ "${{ steps.check_tag.outputs.exists }}" == "true" ]]; then
-            echo "### Skipped - Tag Already Exists" >> $GITHUB_STEP_SUMMARY
-            echo "Tag v${{ steps.next.outputs.version }} already exists." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### Auto Release Triggered" >> $GITHUB_STEP_SUMMARY
-            echo "- Previous version: v${{ steps.current.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- New version: v${{ steps.next.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The publish workflow will now build and publish to npm and JSR." >> $GITHUB_STEP_SUMMARY
-          fi
+  publish:
+    name: Publish Package
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for npm OIDC and JSR publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Install latest npm
+        run: npm install -g npm@latest
+
+      # Publish to npm with OIDC provenance
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+
+      # Publish to JSR
+      - name: Publish to JSR
+        run: pnpx jsr publish
+
+  release:
+    name: Create Release
+    needs: version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
