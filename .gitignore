@@ -25,6 +25,8 @@ out/
 .junie/
 .cursor/
 .cursorrules
+.claude/
+CLAUDE.md
 *.swp
 *.swo
 *~
