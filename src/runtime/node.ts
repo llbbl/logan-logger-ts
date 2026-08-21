@@ -13,10 +13,15 @@ export class NodeLogger extends BaseLogger {
 
   private async initializeWinston(): Promise<void> {
     try {
-      // Try to load Winston if available (optional peer dependency)
+      // Try to load Winston if available (optional peer dependency).
+      // Use a dynamic specifier so JSR's publish pipeline won't rewrite the
+      // bare import 'winston' to a relative './winston' path. This keeps
+      // resolution at runtime, where Node will find the npm package if
+      // installed and throw harmlessly otherwise.
+      const winstonModule = 'winston';
       // biome-ignore lint/suspicious/noTsIgnore: Winston optional dependency - error only exists in CI without Winston
       // @ts-ignore - Winston is an optional peer dependency, may not be installed in all environments
-      const winston = await import('winston');
+      const winston = await import(winstonModule);
       this.winston = this.createWinstonLogger(winston);
     } catch (error) {
       // Winston not available, will fall back to console
