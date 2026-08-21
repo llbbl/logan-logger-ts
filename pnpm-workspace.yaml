@@ -1,0 +1,24 @@
+# pnpm 11 settings home.
+#
+# pnpm 11 no longer reads the `pnpm` field in package.json or pnpm-specific
+# keys in .npmrc — every setting below used to live in package.json#pnpm.
+
+# Moved from package.json#pnpm.overrides.
+# esbuild <0.25.0 is vulnerable to GHSA-67mh-4wv8-2f99 (dev server request
+# smuggling); vite pulls esbuild transitively.
+overrides:
+  esbuild: '>=0.25.0'
+
+# Supply-chain hardening (pnpm 11 defaults, stated explicitly so they are
+# visible in review and survive future default changes).
+minimumReleaseAge: 1440 # refuse package versions younger than 24h
+blockExoticSubdeps: true # no git/tarball transitive deps
+strictDepBuilds: true # fail install on unapproved postinstall scripts
+verifyDepsBeforeRun: install # re-check the lockfile before `pnpm run`
+
+# Postinstall allowlist. Empty map blocks all build scripts; entries are added
+# only after checking what the script actually does.
+allowBuilds:
+  # esbuild's postinstall links the platform-specific binary it ships as an
+  # optional dependency. Required for vite to run. Pulled in transitively.
+  esbuild: true

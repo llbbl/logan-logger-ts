@@ -1,0 +1,21 @@
+# Pinned toolchain for logan-logger.
+#
+# pnpm is pinned to the same version as the `packageManager` field in
+# package.json so local installs, CI, and the release workflow all resolve
+# dependencies identically. A mismatch here is what broke the v1.1.17
+# release: CI ran pnpm 8 while auto-release ran pnpm 11, and only the
+# latter stopped reading `pnpm.overrides` from package.json.
+#
+# Node 22.12 is the supported floor (see engines.node); CI covers 22.12 and 24.
+
+[tools]
+node = "24"
+pnpm = "11.9.0"
+
+[tasks.check]
+description = "Lint, typecheck, and test — the same gates CI runs"
+run = ["pnpm lint", "pnpm typecheck", "pnpm test"]
+
+[tasks.floor]
+description = "Run the test suite against the minimum supported Node (22.12)"
+run = "mise x node@22.12 -- pnpm test"

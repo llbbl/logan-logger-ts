@@ -22,10 +22,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # No `version:` input — pnpm/action-setup reads `packageManager` from
+      # package.json, so CI and this workflow can never drift apart.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,9 +50,13 @@ jobs:
           version="${latest_tag#v}"
           IFS='.' read -r major minor patch <<< "$version"
 
-          commits=$(git log "$latest_tag"..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+          # %s%n%b so a `BREAKING CHANGE:` footer in the commit body is seen.
+          # Subject-only (%s) missed every footer-declared breaking change.
+          commits=$(git log "$latest_tag"..HEAD --pretty=format:"%s%n%b" 2>/dev/null || git log --pretty=format:"%s%n%b")
 
-          if echo "$commits" | grep -qE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|^refactor(\(.+\))?!:|BREAKING CHANGE"; then
+          # Any conventional-commit type may carry `!`, not just feat/fix/refactor.
+          # A `chore!:` used to fall through to a patch bump.
+          if echo "$commits" | grep -qE "^[a-zA-Z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:"; then
             major=$((major + 1))
             minor=0
             patch=0
@@ -129,10 +135,12 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      # No `version:` input — pnpm/action-setup reads `packageManager` from
+      # package.json, so CI and this workflow can never drift apart.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
