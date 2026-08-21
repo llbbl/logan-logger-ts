@@ -110,6 +110,9 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Install Deno dependencies (frozen lockfile)
+        run: deno install --frozen=true
+
       - name: Run Deno tests
         run: deno test --no-check --allow-read --allow-env tests/deno-simple.test.ts
 
