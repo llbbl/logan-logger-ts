@@ -24,16 +24,19 @@ jobs:
         with:
           run_install: false
 
-      # pnpm 11 is pure ESM and requires Node 22+, so dependencies are always
-      # installed under Node 22 regardless of the version under test. This is
-      # a toolchain constraint only — the published library still supports
-      # Node 20 (see engines.node), which is why 20.19 stays in the matrix.
-      # Safe because the package has no native dependencies, so the installed
-      # tree is portable across Node versions.
-      - name: Setup Node.js 22.12 (toolchain)
+      # Dependencies are always installed under Node 22.x, whatever version is
+      # under test: pnpm 11.9.0 refuses to run below Node 22.13, which is
+      # stricter than this package's own floor of 22.12. Pinning to '22' rather
+      # than an exact patch keeps a future pnpm bump from breaking this again.
+      #
+      # This is a toolchain constraint only. The published library still
+      # supports Node 20 (see engines.node), which is why 20.19 stays in the
+      # matrix. Safe because the package has no native dependencies, so the
+      # installed tree is portable across Node versions.
+      - name: Setup Node.js 22 (toolchain)
         uses: actions/setup-node@v4
         with:
-          node-version: '22.12'
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -122,10 +125,11 @@ jobs:
         with:
           run_install: false
 
+      # >= 22.13 required by pnpm 11.9.0; see note in test-node.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.12'
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -151,10 +155,11 @@ jobs:
         with:
           run_install: false
 
+      # >= 22.13 required by pnpm 11.9.0; see note in test-node.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.12'
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
