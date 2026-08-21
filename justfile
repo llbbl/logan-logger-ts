@@ -84,7 +84,6 @@ versions:
     #!/bin/sh
     echo "=== Current Versions ==="
     echo "package.json: $(jq -r '.version' package.json)"
-    echo "jsr.json:     $(jq -r '.version // "not set"' jsr.json)"
     echo "deno.json:    $(jq -r '.version // "not set"' deno.json)"
 
 # Sync versions across all config files (uses package.json as source)
@@ -93,7 +92,6 @@ version-sync:
     set -e
     VERSION=$(jq -r '.version' package.json)
     echo "Syncing all configs to version: $VERSION"
-    jq --arg v "$VERSION" '.version = $v' jsr.json > jsr.json.tmp && mv jsr.json.tmp jsr.json
     jq --arg v "$VERSION" '.version = $v' deno.json > deno.json.tmp && mv deno.json.tmp deno.json
     echo "Done."
 
@@ -103,7 +101,6 @@ _update-version version:
     #!/bin/sh
     set -e
     jq --arg v "{{ version }}" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
-    jq --arg v "{{ version }}" '.version = $v' jsr.json > jsr.json.tmp && mv jsr.json.tmp jsr.json
     jq --arg v "{{ version }}" '.version = $v' deno.json > deno.json.tmp && mv deno.json.tmp deno.json
 
 # Bump patch version (1.1.13 → 1.1.14)
@@ -118,7 +115,7 @@ bump-patch:
     NEW="$MAJOR.$MINOR.$((PATCH + 1))"
     echo "New version: $NEW"
     just _update-version "$NEW"
-    git add package.json jsr.json deno.json
+    git add package.json deno.json
     git commit -m "chore(release): bump version to $NEW"
     git tag "v$NEW"
     echo ""
@@ -138,7 +135,7 @@ bump-minor:
     NEW="$MAJOR.$((MINOR + 1)).0"
     echo "New version: $NEW"
     just _update-version "$NEW"
-    git add package.json jsr.json deno.json
+    git add package.json deno.json
     git commit -m "chore(release): bump version to $NEW"
     git tag "v$NEW"
     echo ""
@@ -157,7 +154,7 @@ bump-major:
     NEW="$((MAJOR + 1)).0.0"
     echo "New version: $NEW"
     just _update-version "$NEW"
-    git add package.json jsr.json deno.json
+    git add package.json deno.json
     git commit -m "chore(release): bump version to $NEW"
     git tag "v$NEW"
     echo ""

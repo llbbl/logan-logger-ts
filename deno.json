@@ -20,5 +20,12 @@
   "tasks": {
     "test": "deno test --allow-read --allow-env",
     "check": "deno check src/index.ts"
+  },
+  "publish": {
+    "include": [
+      "src",
+      "README.md",
+      "LICENSE"
+    ]
   }
 }
