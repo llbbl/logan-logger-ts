@@ -1,6 +1,7 @@
 {
   "name": "logan-logger",
   "version": "1.1.16",
+  "packageManager": "pnpm@11.9.0",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -84,11 +85,6 @@
     "README.md",
     "LICENSE"
   ],
-  "pnpm": {
-    "overrides": {
-      "esbuild": ">=0.25.0"
-    }
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/llbbl/logan-logger-ts.git"
