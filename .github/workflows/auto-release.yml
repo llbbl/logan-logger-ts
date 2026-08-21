@@ -36,7 +36,13 @@ jobs:
       - name: Determine next version
         id: version
         run: |
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Use the highest semver tag in the repo, not `git describe`.
+          # `git describe` only sees tags reachable from HEAD, so a reverted
+          # release bump leaves it pointing at an older tag and we recompute a
+          # version that was already published. Filtering on vN.N.N also skips
+          # malformed tags left behind by failed runs.
+          latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          [ -z "$latest_tag" ] && latest_tag="v0.0.0"
           echo "latest=$latest_tag" >> "$GITHUB_OUTPUT"
 
           version="${latest_tag#v}"
@@ -59,6 +65,11 @@ jobs:
           echo "next=$next" >> "$GITHUB_OUTPUT"
           echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
           echo "Next version: $next (from $latest_tag)"
+
+          if git rev-parse -q --verify "refs/tags/$next" >/dev/null; then
+            echo "::error::Tag $next already exists. Refusing to republish." >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
