@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['20.19', '22.12', '24']
+        node-version: ['22.12', '24', '26']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,10 +29,18 @@ jobs:
       # stricter than this package's own floor of 22.12. Pinning to '22' rather
       # than an exact patch keeps a future pnpm bump from breaking this again.
       #
-      # This is a toolchain constraint only. The published library still
-      # supports Node 20 (see engines.node), which is why 20.19 stays in the
-      # matrix. Safe because the package has no native dependencies, so the
-      # installed tree is portable across Node versions.
+      # This is a toolchain constraint only, and it is why the 22.12 matrix job
+      # cannot run pnpm directly: it installs here under a newer Node, then
+      # switches down to the version under test. Safe because the package has
+      # no native dependencies, so the installed tree is portable across Node
+      # versions.
+      #
+      # Do not "simplify" this away by raising the floor to 22.13. The floor is
+      # deliberately 22.12 because that is where `require(esm)` shipped
+      # unflagged — the capability boundary that actually matters for a dual
+      # ESM/CJS package. Moving it to 22.13 would let a pnpm constraint dictate
+      # the package's public contract, and would silently drop the only job
+      # that proves the advertised floor works.
       - name: Setup Node.js 22 (toolchain)
         uses: actions/setup-node@v4
         with:
@@ -44,7 +52,7 @@ jobs:
 
       # Switch to the Node version actually under test. Tools are invoked from
       # node_modules/.bin rather than via `pnpm run`, because pnpm itself
-      # cannot execute on Node 20.
+      # cannot execute on 22.12 (see above).
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -60,17 +68,7 @@ jobs:
         run: ./node_modules/.bin/tsc --noEmit
 
       - name: Run tests
-        env:
-          NODE_UNDER_TEST: ${{ matrix.node-version }}
-        run: |
-          if [ "$NODE_UNDER_TEST" = "20.19" ]; then
-            # Known vitest worker-thread flakiness on Node 20.19; retry once
-            # before failing, rather than ignoring the result outright.
-            ./node_modules/.bin/vitest run --reporter=default \
-              || ./node_modules/.bin/vitest run --reporter=default
-          else
-            ./node_modules/.bin/vitest run --reporter=default
-          fi
+        run: ./node_modules/.bin/vitest run --reporter=default
 
       - name: Build library
         run: |

@@ -65,7 +65,7 @@ Use named imports. There is no default export.
 | Runtime | Import | Notes |
 |---|---|---|
 | Auto-detect | `logan-logger` | Also the right choice for Next.js and other isomorphic frameworks |
-| Node.js 20+ | `logan-logger/node` | Adds the file transport and Morgan integration |
+| Node.js 22.12+ | `logan-logger/node` | Adds the file transport and Morgan integration |
 | Bun | `logan-logger/bun` | Same as Node |
 | Browser / WebWorker | `logan-logger/browser` | CSS-styled console, performance marks, grouping |
 | Deno | `jsr:@logan/logger` | Console; native implementation planned |

@@ -315,7 +315,7 @@ logan-logger-ts/
 
 | Runtime | Version | Status | Implementation | Dependencies |
 |---------|---------|--------|----------------|--------------|
-| Node.js | 20+     | ✅ Full | Console + File transports | None |
+| Node.js | 22.12+  | ✅ Full | Console + File transports | None |
 | Deno | 1.0+    | 🟡 Planned | Native APIs | None |
 | Bun | 0.5+    | 🟡 Planned | Native APIs | None |
 | Browser | Modern  | 🟡 Planned | Console API | None |
