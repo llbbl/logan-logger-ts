@@ -83,8 +83,17 @@ export interface LoggerConfig {
  * Configuration for a specific log transport (output destination).
  */
 export interface TransportConfig {
-  /** Type of transport */
-  type: 'console' | 'file' | 'http' | 'custom';
+  /**
+   * Type of transport.
+   *
+   * `registerTransport()` accepts any name, so this cannot be a closed union
+   * without making a registered transport unnameable from configuration.
+   * `(string & {})` is what keeps the four built-in names in editor
+   * autocomplete while still accepting an arbitrary registered one — a bare
+   * `| string` collapses the whole union to `string` and loses the
+   * suggestions. Do not "simplify" it.
+   */
+  type: 'console' | 'file' | 'http' | 'custom' | (string & {});
   /** Minimum log level for this transport */
   level?: LogLevel;
   /** Transport-specific options */

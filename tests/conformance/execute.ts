@@ -113,18 +113,9 @@ registerTransport(CAPTURE_TRANSPORT, (config, context) => {
   };
 });
 
-/**
- * Name the capture transport in a `LoggerConfig`.
- *
- * The double cast is not incidental: `registerTransport` accepts any string,
- * but `TransportConfig.type` is the closed union
- * `'console' | 'file' | 'http' | 'custom'`, so a transport registered under any
- * other name cannot be referenced from config without going through `unknown`.
- * That is a gap in the public types rather than in this runner, and it is
- * reported rather than patched around in the library.
- */
+/** Name the capture transport in a `LoggerConfig`. */
 function captureTransportConfig(sink: Captured[]): TransportConfig {
-  return { type: CAPTURE_TRANSPORT, options: { sink } } as unknown as TransportConfig;
+  return { type: CAPTURE_TRANSPORT, options: { sink } };
 }
 
 /**

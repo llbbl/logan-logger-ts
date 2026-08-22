@@ -437,7 +437,12 @@ const logger = new NodeLogger({
 |---|---|---|
 | `console` | everywhere | `format`, `timestamp`, `colorize` |
 | `file` | `logan-logger/node`, `logan-logger/bun` | `filename`, `maxsize`, `maxFiles`, `format`, `timestamp` |
-| `custom` | everywhere | `transport` — any object with `write(entry)` |
+| `custom` | everywhere | `transport` — an object with `write(entry)`, or a function returning one |
+
+`type` is not limited to those three names. `registerTransport(name, factory)`
+adds a name, and `TransportConfig.type` accepts any string — the built-in names
+are spelled out in the type only so editors suggest them. A name with no
+registered factory warns and is skipped rather than throwing.
 
 `TransportConfig.level` filters per destination, independently of the logger's
 own level. The example above sends everything to the console and only errors to
@@ -488,24 +493,48 @@ naming the entry point to import instead.
 
 ### Custom transports
 
-Inline:
+There are two ways in, and they differ in one respect worth choosing on.
+
+**Registered by name.** The factory is handed the logger's `TransportContext`
+— `format`, `timestamp`, `colorize` — so the transport can present records the
+way the rest of the logger does. The name is then usable anywhere a
+`TransportConfig` is, a JSON config file included, which is what makes this the
+right choice for a destination the application ships with.
 
 ```ts
+import { registerTransport } from 'logan-logger';
+
+registerTransport('syslog', (config, context) => new SyslogTransport(config.options, context));
+
+const logger = new NodeLogger({ transports: [{ type: 'syslog', options: { host: 'localhost' } }] });
+```
+
+**The `custom` hatch.** No registration, no name — pass the destination
+straight in. As an object it never sees the logger's presentation settings; if
+it needs them, pass a function instead and it is called with the same
+`TransportContext` a registered factory receives.
+
+```ts
+// Object: simplest, and gets no format context.
 const logger = new NodeLogger({
   transports: [{
     type: 'custom',
     options: { transport: { type: 'syslog', write(entry) { /* … */ } } },
   }],
 });
+
+// Function: called with the logger's context, and uses what it returns.
+const contextual = new NodeLogger({
+  format: 'json',
+  transports: [{
+    type: 'custom',
+    options: { transport: (context) => new SyslogTransport({}, context) },
+  }],
+});
 ```
 
-Or registered by name, so it can be selected from configuration:
-
-```ts
-import { registerTransport } from 'logan-logger';
-
-registerTransport('syslog', (config, context) => new SyslogTransport(config.options));
-```
+The function is called plainly, not with `new`, so pass an instance or an arrow
+that returns one rather than a class.
 
 `entry` is a `LogEntry`: `{ timestamp: Date, level: LogLevel, message: string,
 metadata?: Record<string, any>, runtime: RuntimeName }`. Use `formatLogEntry`

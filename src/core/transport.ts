@@ -32,6 +32,14 @@ export interface TransportContext {
 /** Builds a transport from its configuration entry. */
 export type TransportFactory = (config: TransportConfig, context: TransportContext) => Transport;
 
+/**
+ * Builds the transport for `{ type: 'custom', options: { transport } }`.
+ *
+ * Called as a plain function, not with `new`, so pass an instance or an arrow
+ * that returns one rather than a class.
+ */
+export type TransportBuilder = (context: TransportContext) => Transport;
+
 const transportFactories = new Map<string, TransportFactory>();
 
 /**
@@ -116,12 +124,27 @@ registerTransport('console', (config, context) => {
 // `{ type: 'custom', options: { transport } }` accepts any object satisfying
 // the Transport interface, so callers can plug in their own destination
 // without waiting for a built-in.
-registerTransport('custom', (config) => {
-  const supplied = config.options?.transport as Transport | undefined;
+registerTransport('custom', (config, context) => {
+  const provided = config.options?.transport as Transport | TransportBuilder | undefined;
+
+  // A function is treated as a builder so an inline custom transport can read
+  // the logger's presentation settings, which a registered named transport
+  // already gets. It is called plainly, never with `new`, so a class must be
+  // passed as an instance or wrapped in an arrow.
+  const supplied = typeof provided === 'function' ? provided(context) : provided;
 
   if (!supplied || typeof supplied.write !== 'function') {
+    // Name which form was supplied: a builder that returned the wrong thing and
+    // a plain object missing write() are different mistakes with different
+    // fixes. A class constructor never reaches here — calling it plainly throws
+    // "cannot be invoked without 'new'" first, which already says enough.
+    const got =
+      typeof provided === 'function'
+        ? 'the function it was given returned no write(entry) method'
+        : 'it was given no object with a write(entry) method';
+
     throw new Error(
-      "custom transport requires options.transport to be an object with a write(entry) method"
+      `custom transport requires options.transport to be an object with a write(entry) method, or a function returning one; ${got}`
     );
   }
 
