@@ -1,6 +1,6 @@
 import { BrowserLogger } from '../runtime/browser.ts';
 import { NodeLogger } from '../runtime/node.ts';
-import { getDefaultConfig } from '../utils/config.ts';
+import { loadConfigFromEnvironment, mergeConfigs, tryParseLogLevel } from '../utils/config.ts';
 import { detectRuntime } from '../utils/runtime.ts';
 import { type ILogger, type LoggerConfig, LogLevel } from './types.ts';
 
@@ -52,16 +52,26 @@ export class LoggerFactory {
     return parent.child(metadata);
   }
 
+  /**
+   * Assemble the effective configuration.
+   *
+   * Precedence, lowest to highest:
+   *
+   *     library defaults  <  explicit config  <  environment variables
+   *
+   * Environment variables win so that an operator can change logging on a
+   * running service without a deploy. A consumer that must not be overridden
+   * that way sets `ignoreEnvironment: true`.
+   *
+   * The config-file link of the chain documented in `docs/environment-variables.md`
+   * is still missing: `loadConfigFromFile` is async and this path is not.
+   */
   private static mergeConfig(userConfig: Partial<LoggerConfig>): Partial<LoggerConfig> {
-    const defaultConfig = getDefaultConfig();
-    return {
-      ...defaultConfig,
-      ...userConfig,
-      metadata: {
-        ...defaultConfig.metadata,
-        ...userConfig.metadata,
-      },
-    };
+    const environment = userConfig.ignoreEnvironment ? {} : loadConfigFromEnvironment();
+
+    // mergeConfigs seeds itself with getDefaultConfig(), so defaults must not
+    // be passed again here.
+    return mergeConfigs(userConfig, environment);
   }
 }
 
@@ -140,24 +150,16 @@ function getLogLevelForEnvironment(env: string): LogLevel {
   }
 }
 
-// Type-safe log level conversion
+/**
+ * Convert a level string to a `LogLevel`, falling back to INFO.
+ *
+ * Delegates to the single parser in `utils/config.ts`; use `tryParseLogLevel`
+ * directly when an unrecognized value should be distinguishable from `info`.
+ * @param level - The value to convert
+ * @returns The matching level, or `LogLevel.INFO`
+ */
 export function stringToLogLevel(level: string): LogLevel {
-  switch (level.toLowerCase()) {
-    case 'debug':
-      return LogLevel.DEBUG;
-    case 'info':
-      return LogLevel.INFO;
-    case 'warn':
-    case 'warning':
-      return LogLevel.WARN;
-    case 'error':
-      return LogLevel.ERROR;
-    case 'silent':
-    case 'none':
-      return LogLevel.SILENT;
-    default:
-      return LogLevel.INFO;
-  }
+  return tryParseLogLevel(level) ?? LogLevel.INFO;
 }
 
 export function logLevelToString(level: LogLevel): string {

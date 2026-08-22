@@ -19,6 +19,10 @@ export abstract class BaseLogger implements ILogger {
     this.config = config;
     this.level = config.level ?? LogLevel.INFO;
     this.runtime = detectRuntime().name;
+    // config.metadata is the documented "default metadata on every message".
+    // Seeding childMetadata is what makes that true, and it inherits through
+    // child() for free.
+    this.childMetadata = { ...config.metadata };
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see ILogger interface)

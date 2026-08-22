@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logLevelToString, stringToLogLevel } from '../src/core/factory.ts';
 import { type LoggerConfig, LogLevel } from '../src/core/types.ts';
+import { loadConfigFromFile } from '../src/utils/config-file.ts';
 import {
   getDefaultConfig,
   loadConfigFromEnvironment,
-  loadConfigFromFile,
   mergeConfigs,
 } from '../src/utils/config.ts';
 
