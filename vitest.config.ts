@@ -4,7 +4,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    pool: 'vmThreads',
+    // Forks rather than VM threads: tests/config-file.test.ts uses
+    // process.chdir() to exercise config discovery against real directories,
+    // and chdir is unavailable in any worker-thread pool.
+    pool: 'forks',
     include: [
       'src/**/*.{test,spec}.{js,ts}',
       'tests/**/*.{test,spec}.{js,ts}'

@@ -185,9 +185,11 @@ logging regardless of the host application's environment opts out:
 const logger = createLogger({ level: LogLevel.WARN, ignoreEnvironment: true });
 ```
 
-**Config files are not in this chain.** `loadConfigFromFile()` is exported and
-usable directly, but `createLogger()` is synchronous and cannot await it. See
-[#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+**Config files are applied explicitly.** `createLogger()` is synchronous and
+`loadConfigFromFile()` is not, so opt in by awaiting it:
+`createLogger(await loadConfigFromFile())`. It then sits below both explicit
+config and the environment. See
+[configuration.md](./configuration.md#config-files).
 
 ### Unrecognized values
 

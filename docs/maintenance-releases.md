@@ -98,6 +98,19 @@ recording why dist-tags were not adopted, and observably: `@hono/hono` reports
 `4.13.3` as latest while holding twelve `4.9.x` versions, so the ordering is
 semver-aware rather than lexicographic.
 
+## Issues do not auto-close from this branch
+
+GitHub only closes issues from commits merged into the **default** branch. A
+`Closes #N` in a merge to `1.x` is inert — the issue stays open with no
+indication that anything happened.
+
+Close it by hand after the release lands, and say why in the comment so the
+trail is not confusing later:
+
+```bash
+gh issue close <N> --comment "Backported in #<PR> and published as vX.Y.Z under v<major>-lts."
+```
+
 ## What is not automated
 
 - **Dependabot** targets the default branch only. A maintenance line does not

@@ -32,9 +32,17 @@ Environment variables sit on top so an operator can change logging on a running
 service without a deploy. A library that must pin its own logging regardless of
 the host application's environment sets [`ignoreEnvironment`](#ignoreenvironment).
 
-**Config files are not in this chain.** `loadConfigFromFile()` is exported and
-usable directly, but `createLogger()` is synchronous and cannot await it — see
-[#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+**Config files are applied explicitly, not automatically.** `createLogger()` is
+synchronous and `loadConfigFromFile()` is not, so file configuration cannot sit
+in the chain above on its own. Opt in by awaiting it:
+
+```typescript
+const logger = createLogger(await loadConfigFromFile());
+```
+
+Placed there it behaves as the lowest-priority source, since explicit config and
+the environment are both applied on top. See
+[Config files](#config-files) below.
 
 ---
 
@@ -222,6 +230,68 @@ bundlers only inline their own prefixed names by default. Map them explicitly
 (Vite's `define`, for instance) if you want them.
 
 Full detail in [environment-variables.md](./environment-variables.md).
+
+---
+
+## Config files
+
+`loadConfigFromFile()` searches the working directory, in order, and returns the
+first candidate that exists:
+
+| File | Read from |
+|---|---|
+| `logan.config.json` | the whole file |
+| `.loganrc` | the whole file, parsed as **JSON** |
+| `package.json` | the `logan` key |
+
+A `package.json` with no `logan` key counts as absent, so the search continues
+rather than stopping with an empty config.
+
+```typescript
+import { createLogger, loadConfigFromFile } from 'logan-logger';
+
+const logger = createLogger(await loadConfigFromFile());
+```
+
+Pass a path to load exactly one file and skip the search. **A missing file is
+then an error**, not a silent fallback — asking for a specific file that is not
+there is a caller mistake:
+
+```typescript
+await loadConfigFromFile('config/logging.json');   // throws if absent
+```
+
+### Values are normalized
+
+A config file naturally writes `"level": "debug"` — a string, where the runtime
+expects a `LogLevel` ordinal. The loader converts it. Handing the raw JSON
+straight to the logger would make every `level >= this.level` comparison `NaN`
+and **silently discard every record**, so normalization is not optional:
+
+```json
+{ "level": "warn", "format": "json", "timestamp": false, "metadata": { "service": "api" } }
+```
+
+`level` accepts the same names as `LOG_LEVEL`, or a numeric ordinal. A field
+that is unrecognized or of the wrong type is dropped with a warning naming the
+file and the field, rather than being passed through to fail later.
+
+### Failure is loud
+
+A candidate that is present but unreadable or malformed **warns naming the path
+and stops the search**. It does not fall through to the next candidate, because
+a broken config file is a mistake to surface rather than route around.
+
+"File does not exist" and "file exists but cannot be read" are distinguished: a
+permissions error on a config file that is really there is reported, not treated
+as absence.
+
+### No JavaScript config
+
+`logan.config.js` was advertised in 1.x and never actually reachable. It is
+gone. Supporting it meant dynamically importing and executing a file from the
+working directory during logger construction, and nothing in `LoggerConfig`
+needs to be computed — JSON covers the entire surface.
 
 ---
 

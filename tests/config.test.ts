@@ -307,10 +307,12 @@ describe('Configuration System', () => {
       expect(config).toEqual({});
     });
 
-    it('should return empty config when files do not exist', async () => {
-      // This test will naturally return empty config since config files don't exist
-      const config = await loadConfigFromFile('non-existent-config.json');
-      expect(config).toEqual({});
+    it('should throw when an explicitly requested file does not exist', async () => {
+      // An explicit path that is missing is a caller mistake, not a reason to
+      // silently fall back to defaults.
+      await expect(loadConfigFromFile('non-existent-config.json')).rejects.toThrow(
+        /config file not found/
+      );
     });
 
     it('should search default config file paths', async () => {
