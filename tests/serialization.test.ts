@@ -147,6 +147,244 @@ describe('Serialization Utilities', () => {
       expect(filtered.normalField).toBe('normal');
     });
 
+    it('should replace the defaults with a supplied key set, and pluralize it', () => {
+      const data = { ssn: '1', ssns: '2', password: 'p' };
+
+      const filtered = filterSensitiveData(data, ['ssn']);
+
+      expect(filtered.ssn).toBe('[REDACTED]');
+      // The plural rule covers caller-supplied keys, not just the defaults.
+      expect(filtered.ssns).toBe('[REDACTED]');
+      // `password` survives because a supplied set replaces the defaults.
+      expect(filtered.password).toBe('p');
+    });
+
+    it('should tokenize a multi-token supplied key across every casing', () => {
+      // Regression guard. Comparing a key raw against field tokens redacts NONE
+      // of the first three: the field tokens are `credit` and `card`, neither of
+      // which equals `creditcard`. It fails closed, silently, and only for
+      // callers who supplied their own keys.
+      const data = {
+        creditCard: '4111',
+        credit_card: '4222',
+        'CREDIT-CARD': '4333',
+        cardHolder: 'j',
+        monkey: 'g',
+      };
+
+      const filtered = filterSensitiveData(data, ['creditCard']);
+
+      expect(filtered.creditCard).toBe('[REDACTED]');
+      expect(filtered.credit_card).toBe('[REDACTED]');
+      expect(filtered['CREDIT-CARD']).toBe('[REDACTED]');
+      // Only one of the key's two tokens is present.
+      expect(filtered.cardHolder).toBe('j');
+      expect(filtered.monkey).toBe('g');
+    });
+
+    it('should reach a joined spelling from a multi-token key, and back', () => {
+      // The joined comparison, which tokenization alone cannot do.
+      expect(filterSensitiveData({ apikey: 'a' }, ['apiKey']).apikey).toBe('[REDACTED]');
+      expect(filterSensitiveData({ apiKey: 'a' }, ['apikey']).apiKey).toBe('[REDACTED]');
+      // It carries the plural rule too.
+      expect(filterSensitiveData({ apikeys: 'a' }, ['apiKey']).apikeys).toBe('[REDACTED]');
+    });
+
+    it('should match a key whose tokens are a subset of the field name', () => {
+      const filtered = filterSensitiveData({ 'x-auth-token': 'a', authorized: 'b' }, ['authToken']);
+
+      expect(filtered['x-auth-token']).toBe('[REDACTED]');
+      // `authorized` is a single token; neither key token is present.
+      expect(filtered.authorized).toBe('b');
+    });
+
+    it('should treat a key with no tokens as matching nothing, not everything', () => {
+      // An empty key tokenizes to zero tokens, and "every token of the key is
+      // present" is vacuously true for an empty list — so an unguarded
+      // implementation redacts the whole object.
+      for (const emptyKey of ['', '---', '   ']) {
+        const filtered = filterSensitiveData({ username: 'john', note: 'hi' }, [emptyKey]);
+
+        expect(filtered.username).toBe('john');
+        expect(filtered.note).toBe('hi');
+      }
+    });
+
+    it('should tokenize every casing of a name identically', () => {
+      const data = {
+        api_key: 'a',
+        apiKey: 'b',
+        'API-KEY': 'c',
+        API_KEY: 'd',
+        ApiKey: 'e',
+        'x-api-key': 'f',
+      };
+
+      const filtered = filterSensitiveData(data);
+
+      for (const name of Object.keys(data)) {
+        expect(filtered[name]).toBe('[REDACTED]');
+      }
+    });
+
+    it('should redact the joined spellings carried by the default key set', () => {
+      // These are one all-lowercase token each — the same shape as `monkey`.
+      // They redact only because the default set lists them explicitly.
+      const data = {
+        authorization: 'a',
+        apikey: 'b',
+        authtoken: 'c',
+        accesstoken: 'd',
+        secretkey: 'e',
+      };
+
+      const filtered = filterSensitiveData(data);
+
+      for (const name of Object.keys(data)) {
+        expect(filtered[name]).toBe('[REDACTED]');
+      }
+    });
+
+    it('should match a token that is a key or the key followed by s', () => {
+      const data = {
+        tokens: 'a',
+        keys: 'b',
+        passwords: 'c',
+        apiKeys: 'd',
+        monkeys: 'e',
+      };
+
+      const filtered = filterSensitiveData(data);
+
+      expect(filtered.tokens).toBe('[REDACTED]');
+      expect(filtered.keys).toBe('[REDACTED]');
+      expect(filtered.passwords).toBe('[REDACTED]');
+      expect(filtered.apiKeys).toBe('[REDACTED]');
+      // `monkeys` is not `key` + s; it is a single token.
+      expect(filtered.monkeys).toBe('e');
+    });
+
+    it('should split at letter/digit boundaries without over-matching', () => {
+      const data = { key1: 'a', token2: 'b', api_key_2: 'c', sha256: 'd' };
+
+      const filtered = filterSensitiveData(data);
+
+      expect(filtered.key1).toBe('[REDACTED]');
+      expect(filtered.token2).toBe('[REDACTED]');
+      expect(filtered.api_key_2).toBe('[REDACTED]');
+      // sha256 splits to `sha` and `256`, matching nothing.
+      expect(filtered.sha256).toBe('d');
+    });
+
+    it('should leave names that merely contain a key as a substring', () => {
+      // The over-match table from #61: every one of these was redacted by the
+      // old substring rule.
+      const data = {
+        monkey: 'george',
+        keyboard: 'qwerty',
+        keywords: ['a', 'b'],
+        tokenizer: 'bpe',
+        author: 'jane',
+        monkeys_seen: 3,
+      };
+
+      const filtered = filterSensitiveData(data);
+
+      expect(filtered.monkey).toBe('george');
+      expect(filtered.keyboard).toBe('qwerty');
+      expect(filtered.keywords).toEqual(['a', 'b']);
+      expect(filtered.tokenizer).toBe('bpe');
+      expect(filtered.author).toBe('jane');
+      expect(filtered.monkeys_seen).toBe(3);
+    });
+
+    it('should never shrink coverage: every credential-shaped name stays redacted', () => {
+      // The guard against a future refactor quietly narrowing the default key
+      // set. A false positive here is annoying; a false negative is a leaked
+      // credential nobody sees, so this list may grow but must never shrink.
+      const credentialFieldNames = [
+        'password',
+        'passwords',
+        'db_password',
+        'user_password',
+        'token',
+        'tokens',
+        'authToken',
+        'authtoken',
+        'access_token',
+        'accessToken',
+        'accesstoken',
+        'refresh_token',
+        'refreshToken',
+        'bearerToken',
+        'secret',
+        'client_secret',
+        'clientSecret',
+        'signingSecret',
+        'key',
+        'keys',
+        'api_key',
+        'apiKey',
+        'apiKeys',
+        'apikey',
+        'API_KEY',
+        'x-api-key',
+        'private_key',
+        'privateKey',
+        'secretKey',
+        'secretkey',
+        'sessionKey',
+        'encryptionKey',
+        'AWS_SECRET_ACCESS_KEY',
+        'auth',
+        'authorization',
+        'Authorization',
+      ];
+
+      const data = Object.fromEntries(credentialFieldNames.map((name) => [name, 'leaked']));
+
+      const filtered = filterSensitiveData(data);
+
+      for (const name of credentialFieldNames) {
+        expect(filtered[name], `${name} must stay redacted`).toBe('[REDACTED]');
+      }
+    });
+
+    it('should never shrink coverage for caller-supplied keys either', () => {
+      // The companion guard to the one above, for the callers this hole hit:
+      // every pair here was redacted by the old substring rule and must stay
+      // redacted. Multi-token keys are the whole point — see #61.
+      const pairs: Array<[key: string, fieldName: string]> = [
+        ['apiKey', 'apiKey'],
+        ['apiKey', 'apikey'],
+        ['apiKey', 'api_key'],
+        ['apiKey', 'API-KEY'],
+        ['creditCard', 'creditCard'],
+        ['creditCard', 'credit_card'],
+        ['customSecret', 'customSecret'],
+        ['userPassword', 'userPassword'],
+        ['authToken', 'authToken'],
+        ['authToken', 'x-auth-token'],
+        ['accessToken', 'access_token'],
+        ['secretKey', 'SECRET_KEY'],
+        ['ssn', 'ssn'],
+        ['ssn', 'ssns'],
+      ];
+
+      for (const [key, fieldName] of pairs) {
+        const filtered = filterSensitiveData({ [fieldName]: 'leaked' }, [key]);
+
+        expect(filtered[fieldName], `key ${key} must redact field ${fieldName}`).toBe('[REDACTED]');
+      }
+    });
+
+    it('should not redact a name that joins a key into a single token', () => {
+      // Documented limitation: `mytoken` is one token, so no rule reaches it.
+      // Callers with house naming conventions pass their own keys.
+      expect(filterSensitiveData({ mytoken: 'abc' }).mytoken).toBe('abc');
+      expect(filterSensitiveData({ mytoken: 'abc' }, ['mytoken']).mytoken).toBe('[REDACTED]');
+    });
+
     it('should handle case-insensitive filtering', () => {
       const data = {
         PASSWORD: 'secret123',
@@ -191,6 +429,8 @@ describe('Serialization Utilities', () => {
 
       const filtered = filterSensitiveData(data);
 
+      expect(Array.isArray(filtered.users)).toBe(true);
+      expect(filtered.users).toHaveLength(2);
       expect(filtered.users[0].name).toBe('john');
       expect(filtered.users[0].password).toBe('[REDACTED]');
       expect(filtered.users[1].name).toBe('jane');

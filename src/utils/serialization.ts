@@ -123,23 +123,137 @@ export function safeStringify(obj: any, space?: number, options: SafeStringifyOp
 }
 
 /**
- * Filter out sensitive data from an object before logging.
- * @param obj - The object to filter
- * @param sensitiveKeys - Array of key names to redact (case-insensitive)
- * @returns A new object with sensitive values replaced with '[REDACTED]'
- * @example
- * ```typescript
- * const data = { username: 'john', password: 'secret123' };
- * const filtered = filterSensitiveData(data);
- * // Result: { username: 'john', password: '[REDACTED]' }
- * ```
+ * Default key set (SPEC §8.2).
+ *
+ * The joined spellings on the second line are **not** redundant with the first
+ * and MUST NOT be trimmed. Tokenization cannot reach them: `apikey` and
+ * `monkey` are the same shape — a single all-lowercase token ending in `key` —
+ * so no matching rule can redact one and spare the other. Without these five
+ * entries, moving from the old substring rule to token matching would *stop*
+ * redacting `authorization`, `apikey`, `accesstoken` and `secretkey`, all of
+ * which the substring rule caught.
+ *
+ * That asymmetry is the whole argument: a spurious `[REDACTED]` is visible and
+ * annoying, a missing one is a leaked credential nobody ever sees. Coverage may
+ * grow, never shrink.
  */
-export function filterSensitiveData(
-  // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
-  obj: any,
-  sensitiveKeys: string[] = ['password', 'token', 'secret', 'key', 'auth']
-  // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
-): any {
+const DEFAULT_SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'key',
+  'auth',
+  'authorization',
+  'apikey',
+  'authtoken',
+  'accesstoken',
+  'secretkey',
+];
+
+/**
+ * One token of a field name, per the boundaries in SPEC §8.1.
+ *
+ * Written as a match rather than a split so it needs no lookbehind, which is
+ * still absent from some of the runtimes this library targets. The three
+ * alternatives, in order:
+ *
+ * - `[A-Z]+(?![a-z])` — an uppercase run that does not hand its last letter to
+ *   a following lowercase word, so `APIKey` yields `API` and not `APIK`
+ * - `[A-Z]?[a-z]+` — a lowercase word with its optional leading capital
+ * - `[0-9]+` — a digit run, which is what makes `key1` split into `key` and `1`
+ *
+ * Anything outside `[A-Za-z0-9]` matches nothing and is therefore dropped,
+ * which is how `_`, `-`, `.` and non-ASCII characters act as separators.
+ */
+const FIELD_NAME_TOKEN = /[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+/g;
+
+/** Split a field name into lowercased tokens (SPEC §8.1). */
+function tokenizeFieldName(name: string): string[] {
+  return (name.match(FIELD_NAME_TOKEN) ?? []).map((token) => token.toLowerCase());
+}
+
+/** A key with everything the match loop needs precomputed. */
+interface PreparedKey {
+  /** One `[token, token + 's']` pair per token of the key. */
+  tokens: [string, string][];
+  /** The key's tokens joined, and that joined form pluralized. */
+  joined: string;
+  joinedPlural: string;
+}
+
+/**
+ * Tokenize each key by the same rule as a field name (SPEC §8.1).
+ *
+ * Done once per `filterSensitiveData` call rather than once per field, and the
+ * plural forms are materialized here so the match loop below allocates nothing.
+ *
+ * Tokenizing the key side is required, not cosmetic. Comparing a key raw
+ * against each field token silently breaks every multi-token key — a caller
+ * passing `creditCard` would get nothing, because the field's tokens are
+ * `credit` and `card` and neither equals `creditcard`. It fails closed, with no
+ * error, and only for the callers who supplied their own keys.
+ */
+function prepareKeys(keys: string[]): PreparedKey[] {
+  const prepared: PreparedKey[] = [];
+
+  for (const key of keys) {
+    const tokens = tokenizeFieldName(key);
+
+    // A key with no tokens (`''`, `'---'`) must match nothing. Skipping it here
+    // is what stops it from matching *everything*: the "every token of the key
+    // appears" test below is vacuously true for an empty token list.
+    if (tokens.length === 0) {
+      continue;
+    }
+
+    const joined = tokens.join('');
+
+    prepared.push({
+      tokens: tokens.map((token) => [token, `${token}s`]),
+      joined,
+      joinedPlural: `${joined}s`,
+    });
+  }
+
+  return prepared;
+}
+
+/**
+ * Decide whether a field name matches any key (SPEC §8.1).
+ *
+ * Two ways to match, per key:
+ *
+ * 1. Every token of the key appears among the field's tokens. This is the
+ *    general case; for a single-token key it reduces to "some field token
+ *    equals the key", which is what every default key exercises.
+ * 2. The field's tokens joined equal the key's tokens joined. Load-bearing:
+ *    it is what lets a supplied `apiKey` reach a field spelled `apikey`, and
+ *    vice versa, which tokenization alone cannot do.
+ *
+ * In both, a field token also matches the key token followed by `s`, so `ssn`
+ * covers `ssns` and `key` covers `keys`.
+ */
+function matchesAnyKey(fieldName: string, keys: PreparedKey[]): boolean {
+  const fieldTokens = tokenizeFieldName(fieldName);
+
+  if (fieldTokens.length === 0) {
+    return false;
+  }
+
+  const fieldJoined = fieldTokens.join('');
+
+  return keys.some(
+    (key) =>
+      key.tokens.every(
+        ([token, plural]) => fieldTokens.includes(token) || fieldTokens.includes(plural)
+      ) ||
+      fieldJoined === key.joined ||
+      fieldJoined === key.joinedPlural
+  );
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
+function redact(obj: any, keys: PreparedKey[]): any {
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
@@ -147,16 +261,12 @@ export function filterSensitiveData(
   const filtered = Array.isArray(obj) ? [] : {};
 
   for (const [key, value] of Object.entries(obj)) {
-    const shouldFilter = sensitiveKeys.some((sensitiveKey) =>
-      key.toLowerCase().includes(sensitiveKey.toLowerCase())
-    );
-
-    if (shouldFilter) {
+    if (matchesAnyKey(key, keys)) {
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
       (filtered as any)[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
-      (filtered as any)[key] = filterSensitiveData(value, sensitiveKeys);
+      (filtered as any)[key] = redact(value, keys);
     } else {
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
       (filtered as any)[key] = value;
@@ -164,6 +274,40 @@ export function filterSensitiveData(
   }
 
   return filtered;
+}
+
+/**
+ * Filter out sensitive data from an object before logging.
+ *
+ * Never applied automatically — the caller invokes it (SPEC §8.3).
+ *
+ * Both the field name and each key are split into tokens, so `api_key`, `apiKey`
+ * and `API-KEY` are all redacted while `monkey` and `tokenizer` are not. A field
+ * matches a key when every token of the key is present in the field name, or
+ * when the two token lists joined are equal; a token also matches that token
+ * followed by `s`. Supplying a key set **replaces** the defaults rather than
+ * extending them.
+ *
+ * Because matching is on whole tokens, a name like `mytoken` is one token and is
+ * not redacted; pass your own keys if your codebase names fields that way.
+ *
+ * @param obj - The object to filter
+ * @param sensitiveKeys - Key names to redact, tokenized and matched case-insensitively
+ * @returns A new object with sensitive values replaced with '[REDACTED]'
+ * @example
+ * ```typescript
+ * const data = { username: 'john', password: 'secret123', monkey: 'george' };
+ * const filtered = filterSensitiveData(data);
+ * // Result: { username: 'john', password: '[REDACTED]', monkey: 'george' }
+ * ```
+ */
+export function filterSensitiveData(
+  // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
+  obj: any,
+  sensitiveKeys: string[] = DEFAULT_SENSITIVE_KEYS
+  // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
+): any {
+  return redact(obj, prepareKeys(sensitiveKeys));
 }
 
 /**

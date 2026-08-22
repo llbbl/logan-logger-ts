@@ -512,16 +512,78 @@ logger.info('User processed', filterSensitiveData({
   name: 'John Doe',
   password: 'secret123',   // -> "[REDACTED]"
   apiKey: 'sk_live_...',   // -> "[REDACTED]"
+  monkey: 'george',        // -> "george"
 }));
 ```
 
-Default keys: `password`, `token`, `secret`, `key`, `auth`. Matching is
-case-insensitive and recurses into nested objects and arrays. Passing your own
-list **replaces** the defaults rather than extending them.
+Redaction recurses into nested objects and arrays, preserving container types.
+Passing your own key list **replaces** the defaults rather than extending them.
 
-> **Matching is by substring, so it over-matches.** `monkey`, `keyboard` and
-> `tokenizer` are all redacted today because they contain `key` or `token`.
-> Tracked in [#61](https://github.com/llbbl/logan-logger-ts/issues/61).
+#### How a field name is matched
+
+Matching is on whole tokens, never substrings, which is why `api_key` is
+redacted and `monkey` is not.
+
+**Both the field name and the key** are split into tokens at every one of these
+boundaries, then lowercased:
+
+| Boundary | Example |
+|---|---|
+| lowercase or digit → uppercase | `apiKey` → `api`, `key` |
+| uppercase run → uppercase + lowercase | `APIKey` → `api`, `key` |
+| letter ↔ digit, either direction | `key1` → `key`, `1` |
+| any run of non-alphanumeric characters | `x-api-key` → `x`, `api`, `key` |
+
+So `api_key`, `apiKey`, `API-KEY`, `API_KEY` and `ApiKey` all produce the same
+tokens: snake_case, camelCase, kebab-case, PascalCase and SCREAMING_SNAKE are
+treated identically.
+
+A field is then redacted when, for some key:
+
+- **every token of the key** appears among the field's tokens, or
+- the field's tokens **joined** equal the key's tokens joined
+
+with a token in either comparison also matching that token followed by `s`. The
+plural rule is what redacts `tokens` and `apiKeys`, and it applies to your own
+keys — passing `ssn` also covers `ssns`. The joined comparison is what lets a key
+of `apiKey` reach a field spelled `apikey`, and vice versa.
+
+For a single-token key this reduces to "some token of the field equals the key",
+which is the common case and what every default key does. Multi-token keys work
+in every casing:
+
+```ts
+filterSensitiveData(data, ['creditCard']);
+// redacts creditCard, credit_card, CREDIT-CARD
+// leaves cardHolder alone — only one of the key's two tokens is present
+```
+
+#### Default keys
+
+```
+password  token  secret  key  auth
+authorization  apikey  authtoken  accesstoken  secretkey
+```
+
+The joined spellings on the second line are not redundant. `apikey` and `monkey`
+are the same shape — one all-lowercase token ending in `key` — so no
+tokenization rule can redact one and spare the other. They are listed
+explicitly, and the set may grow but will not shrink: a spurious `[REDACTED]` is
+visible and annoying, a missing one is a leaked credential nobody sees.
+
+#### Limitation
+
+The list cannot be exhaustive. **A name that joins a key into a single token is
+not redacted** — `mytoken` is one token, so nothing reaches it:
+
+```ts
+filterSensitiveData({ mytoken: 'abc' });            // -> { mytoken: 'abc' }
+filterSensitiveData({ mytoken: 'abc' }, ['mytoken', 'password']);
+                                                     // -> { mytoken: '[REDACTED]' }
+```
+
+If your codebase has a house naming convention, pass your own keys — they may be
+multi-token and in any casing.
 
 ---
 

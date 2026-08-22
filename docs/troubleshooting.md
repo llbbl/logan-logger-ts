@@ -399,14 +399,18 @@ logger.debug(`Expensive: ${computeExpensiveValue()}`);
 
 ### Memory Leaks
 
-**Avoid circular references:**
-```typescript
-import { filterSensitiveData } from 'logan-logger';
+**Circular references are already handled.** Metadata is serialized with
+`safeStringify`, which renders a genuine cycle as `"[Circular]"`:
 
-const obj = { /* potentially circular */ };
-const safe = filterSensitiveData(obj);
-logger.info('Safe object', safe);
+```typescript
+const obj = { name: 'root' };
+obj.self = obj;
+logger.info('Safe object', obj);   // -> { "name": "root", "self": "[Circular]" }
 ```
+
+Do **not** reach for `filterSensitiveData` here — it is a redaction utility, it
+does not track cycles, and it will overflow the stack on a self-referencing
+object. See [Redaction](./configuration.md#redaction) for what it does do.
 
 ## Version-Specific Issues
 
