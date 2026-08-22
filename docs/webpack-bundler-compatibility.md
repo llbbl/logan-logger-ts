@@ -171,8 +171,8 @@ export default {
     commonjs(),
   ],
   external: [
-    // Externalize winston for Node.js builds
-    'winston',
+    // Node built-ins are resolved by the runtime, never bundled
+    /^node:/,
   ],
 };
 ```
@@ -208,7 +208,7 @@ require('esbuild').build({
   outfile: 'dist/bundle.js',
   format: 'esm',
   // Logan Logger works with default settings
-  external: ['winston'], // Only for Node.js builds
+  external: [/^node:/], // Node built-ins, only reached by Node.js builds
 });
 ```
 
@@ -263,8 +263,9 @@ module.exports = {
     },
   },
   externals: {
-    // Don't bundle winston
-    winston: 'winston',
+    // Node built-ins are resolved by the runtime
+    'node:fs': 'commonjs node:fs',
+    'node:path': 'commonjs node:path',
   },
 };
 ```
@@ -324,7 +325,7 @@ import { createLogger, LogLevel } from 'logan-logger';
 import * as LoganLogger from 'logan-logger';
 ```
 
-### Issue: Winston errors in browser
+### Issue: `node:fs` cannot be resolved in a browser build
 
 **Cause**: Server-side logger being used in browser context.
 

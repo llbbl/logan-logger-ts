@@ -40,26 +40,21 @@ export default defineConfig({
       name: 'LoganLogger',
     },
     rollupOptions: {
-      // External dependencies that shouldn't be bundled
-      external: ['winston'],
+      // Node built-ins are resolved by the runtime, never bundled. Only the
+      // node and bun entry points reach them; the browser entry does not.
+      external: [/^node:/],
       output: [
         {
           format: 'es',
           exports: 'named',
           entryFileNames: '[name].mjs',
           chunkFileNames: 'chunks/[name]-[hash].mjs',
-          globals: {
-            winston: 'winston',
-          },
         },
         {
           format: 'cjs',
           exports: 'named',
           entryFileNames: '[name].cjs',
           chunkFileNames: 'chunks/[name]-[hash].cjs',
-          globals: {
-            winston: 'winston',
-          },
         },
       ],
     },

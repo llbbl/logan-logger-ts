@@ -2,9 +2,20 @@ import { type LogEntry, LogLevel } from '../core/types.ts';
 import { safeStringify } from './serialization.ts';
 
 /**
+ * Presentation options for {@link formatLogEntry}, drawn from `LoggerConfig`.
+ */
+export interface FormatOptions {
+  /** Include the timestamp in the text form. Defaults to `true`. */
+  timestamp?: boolean;
+  /** Apply ANSI colour to the level token in the text form. Defaults to `false`. */
+  colorize?: boolean;
+}
+
+/**
  * Format a log entry for output in different formats.
  * @param entry - The log entry to format
  * @param format - Output format ('json' or 'text')
+ * @param options - Presentation options; they affect the text form only
  * @returns Formatted log string
  * @example
  * ```typescript
@@ -19,12 +30,21 @@ import { safeStringify } from './serialization.ts';
  * const textFormat = formatLogEntry(entry, 'text');
  * // Result: "[2024-01-01T12:00:00.000Z] INFO: User logged in {\"userId\":123}"
  *
+ * const bare = formatLogEntry(entry, 'text', { timestamp: false });
+ * // Result: "INFO: User logged in {\"userId\":123}"
+ *
  * const jsonFormat = formatLogEntry(entry, 'json');
  * // Result: {"timestamp":"2024-01-01T12:00:00.000Z","level":"info","message":"User logged in","metadata":{"userId":123},"runtime":"node"}
  * ```
  */
-export function formatLogEntry(entry: LogEntry, format: 'json' | 'text' = 'text'): string {
+export function formatLogEntry(
+  entry: LogEntry,
+  format: 'json' | 'text' = 'text',
+  options: FormatOptions = {}
+): string {
   if (format === 'json') {
+    // The JSON envelope is machine-readable: it always carries the timestamp
+    // and is never colorized, whatever the config says.
     // biome-ignore lint/suspicious/noExplicitAny: Building dynamic JSON object with optional metadata
     const jsonEntry: any = {
       timestamp: entry.timestamp.toISOString(),
@@ -42,11 +62,11 @@ export function formatLogEntry(entry: LogEntry, format: 'json' | 'text' = 'text'
   }
 
   // Text format
-  const timestamp = entry.timestamp.toISOString();
-  const level = LogLevel[entry.level].toUpperCase();
+  const prefix = options.timestamp === false ? '' : `[${entry.timestamp.toISOString()}] `;
+  const level = formatLevel(entry.level, options.colorize === true);
   const metaStr = entry.metadata ? ` ${safeStringify(entry.metadata)}` : '';
 
-  return `[${timestamp}] ${level}: ${entry.message}${metaStr}`;
+  return `${prefix}${level}: ${entry.message}${metaStr}`;
 }
 
 /**

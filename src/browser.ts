@@ -13,25 +13,9 @@ export * from './utils/serialization.ts';
 import { type ILogger, type LoggerConfig, LogLevel } from './core/types.ts';
 // Browser-specific factory functions (avoid importing Node.js factory)
 import { BrowserLogger } from './runtime/browser.ts';
-import { detectRuntime } from './utils/runtime.ts';
-
-function getDefaultBrowserConfig(): LoggerConfig {
-  const runtime = detectRuntime();
-
-  return {
-    level: LogLevel.INFO,
-    format: 'text',
-    timestamp: true,
-    colorize: runtime.capabilities.colorSupport,
-    metadata: {},
-    transports: [
-      {
-        type: 'console',
-        options: {},
-      },
-    ],
-  };
-}
+// utils/config.ts is free of Node specifiers by design; the file-loading half
+// lives in utils/config-file.ts and is deliberately not imported here.
+import { loadConfigFromEnvironment, mergeConfigs } from './utils/config.ts';
 
 function getBrowserEnvironment(): string {
   // Check various environment variables
@@ -74,17 +58,12 @@ function getLogLevelForBrowserEnvironment(env: string): LogLevel {
  * Creates a BrowserLogger instance without importing Node.js dependencies.
  */
 export function createLogger(config: Partial<LoggerConfig> = {}): ILogger {
-  const defaultConfig = getDefaultBrowserConfig();
-  const mergedConfig = {
-    ...defaultConfig,
-    ...config,
-    metadata: {
-      ...defaultConfig.metadata,
-      ...config.metadata,
-    },
-  };
+  // Same precedence as the main factory: defaults < explicit config <
+  // environment. In a browser the LOG_* variables exist only if the bundler
+  // inlined them at build time, in which case this is a no-op.
+  const environment = config.ignoreEnvironment ? {} : loadConfigFromEnvironment();
 
-  return new BrowserLogger(mergedConfig);
+  return new BrowserLogger(mergeConfigs(config, environment));
 }
 
 /**

@@ -1,55 +1,125 @@
 /**
- * Safely stringify an object to JSON, handling circular references,
+ * Maximum traversal depth before `safeStringify` stops descending.
+ * Deeply nested metadata would otherwise recurse until the call stack fails.
+ */
+const DEFAULT_MAX_DEPTH = 100;
+
+/** Options accepted by {@link safeStringify}. */
+export interface SafeStringifyOptions {
+  /** Maximum nesting depth before `'[MaxDepth]'` is emitted. Defaults to 100. */
+  maxDepth?: number;
+}
+
+/**
+ * Build a sanitized clone of `value` with all non-serializable values replaced
+ * by markers.
+ *
+ * `ancestors` holds the objects on the **current path** only. It is unwound in
+ * the `finally` below, so a value is reported as `'[Circular]'` when it is its
+ * own ancestor, not merely because it was encountered earlier somewhere else.
+ * Sibling references to the same object serialize in full at each occurrence.
+ */
+function sanitize(
+  value: unknown,
+  ancestors: Set<object>,
+  depth: number,
+  maxDepth: number
+): unknown {
+  // Substitutions for values JSON cannot represent. `undefined` is intercepted
+  // here because JSON.stringify would otherwise drop the property entirely.
+  if (value === undefined) {
+    return '[undefined]';
+  }
+  if (typeof value === 'bigint') {
+    return `[BigInt: ${value.toString()}]`;
+  }
+  if (typeof value === 'symbol') {
+    return `[Symbol: ${value.toString()}]`;
+  }
+  if (typeof value === 'function') {
+    return `[Function: ${value.name || 'anonymous'}]`;
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  const container = value as object;
+
+  if (ancestors.has(container)) {
+    return '[Circular]';
+  }
+  if (depth >= maxDepth) {
+    return '[MaxDepth]';
+  }
+
+  ancestors.add(container);
+
+  try {
+    if (container instanceof Error) {
+      return sanitizeEntries(serializeError(container), ancestors, depth, maxDepth);
+    }
+
+    // Mirror JSON.stringify, which consults toJSON before serializing. This is
+    // what keeps Date values as ISO-8601 strings rather than empty objects.
+    const toJSON = (container as { toJSON?: unknown }).toJSON;
+    if (typeof toJSON === 'function') {
+      return sanitize(toJSON.call(container), ancestors, depth, maxDepth);
+    }
+
+    if (Array.isArray(container)) {
+      // Indexed rather than mapped: Array.prototype.map skips holes, and a hole
+      // must still render as '[undefined]'.
+      const items: unknown[] = [];
+      for (let index = 0; index < container.length; index++) {
+        items.push(sanitize(container[index], ancestors, depth + 1, maxDepth));
+      }
+      return items;
+    }
+
+    return sanitizeEntries(container as Record<string, unknown>, ancestors, depth, maxDepth);
+  } finally {
+    ancestors.delete(container);
+  }
+}
+
+function sanitizeEntries(
+  source: Record<string, unknown>,
+  ancestors: Set<object>,
+  depth: number,
+  maxDepth: number
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const [key, entry] of Object.entries(source)) {
+    result[key] = sanitize(entry, ancestors, depth + 1, maxDepth);
+  }
+
+  return result;
+}
+
+/**
+ * Safely stringify a value to JSON, handling circular references,
  * Error objects, functions, and other non-serializable values.
- * @param obj - The object to stringify
+ * @param obj - The value to stringify
  * @param space - Number of spaces for pretty-printing (optional)
+ * @param options - Traversal limits (optional)
  * @returns JSON string representation
+ * @example
+ * ```typescript
+ * const user = { id: 7 };
+ * safeStringify({ actor: user, owner: user });
+ * // {"actor":{"id":7},"owner":{"id":7}} — a repeated reference is not a cycle
+ *
+ * const cyclic: any = {};
+ * cyclic.self = cyclic;
+ * safeStringify(cyclic); // {"self":"[Circular]"}
+ * ```
  */
 // biome-ignore lint/suspicious/noExplicitAny: Serialization utility accepts arbitrary input types
-export function safeStringify(obj: any, space?: number): string {
-  const seen = new WeakSet();
+export function safeStringify(obj: any, space?: number, options: SafeStringifyOptions = {}): string {
+  const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
 
-  return JSON.stringify(
-    obj,
-    (_key, value) => {
-      // Handle circular references
-      if (typeof value === 'object' && value !== null) {
-        if (seen.has(value)) {
-          return '[Circular]';
-        }
-        seen.add(value);
-      }
-
-      // Handle Error objects. Delegates to the single shared serializer below
-      // so that safeStringify and serializeError cannot drift apart.
-      if (value instanceof Error) {
-        return serializeError(value);
-      }
-
-      // Handle functions
-      if (typeof value === 'function') {
-        return `[Function: ${value.name || 'anonymous'}]`;
-      }
-
-      // Handle undefined (JSON.stringify normally omits these)
-      if (value === undefined) {
-        return '[undefined]';
-      }
-
-      // Handle BigInt
-      if (typeof value === 'bigint') {
-        return `[BigInt: ${value.toString()}]`;
-      }
-
-      // Handle Symbol
-      if (typeof value === 'symbol') {
-        return `[Symbol: ${value.toString()}]`;
-      }
-
-      return value;
-    },
-    space
-  );
+  return JSON.stringify(sanitize(obj, new Set<object>(), 0, maxDepth), null, space);
 }
 
 /**
@@ -97,17 +167,6 @@ export function filterSensitiveData(
 }
 
 /**
- * Serialize Error objects to plain objects for logging.
- * @param error - The error to serialize
- * @returns Serialized error object or original value if not an Error
- * @example
- * ```typescript
- * const error = new Error('Something went wrong');
- * const serialized = serializeError(error);
- * // Result: { name: 'Error', message: 'Something went wrong', stack: '...' }
- * ```
- */
-/**
  * Properties emitted first, in this order, and never overwritable by a
  * same-named own property on the error.
  */
@@ -135,6 +194,17 @@ function readErrorProperty(error: Error, property: string): unknown {
   return descriptor.value;
 }
 
+/**
+ * Serialize Error objects to plain objects for logging.
+ * @param error - The error to serialize
+ * @returns Serialized error object or original value if not an Error
+ * @example
+ * ```typescript
+ * const error = new Error('Something went wrong');
+ * const serialized = serializeError(error);
+ * // Result: { name: 'Error', message: 'Something went wrong', stack: '...' }
+ * ```
+ */
 // biome-ignore lint/suspicious/noExplicitAny: Error serialization accepts arbitrary error types
 export function serializeError(error: any): any {
   if (!(error instanceof Error)) {

@@ -1,6 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type LoggerConfig, LogLevel } from '../src/core/types.ts';
+import type { Transport } from '../src/core/transport.ts';
+import { type LogEntry, type LoggerConfig, LogLevel } from '../src/core/types.ts';
 import { createMorganStream, NodeLogger } from '../src/runtime/node.ts';
+
+/** A transport that keeps what it was given, for assertions. */
+function recordingTransport(): Transport & { entries: LogEntry[] } {
+  const entries: LogEntry[] = [];
+
+  return {
+    type: 'recording',
+    entries,
+    write(entry: LogEntry) {
+      entries.push(entry);
+    },
+  };
+}
 
 describe('Node.js Logger', () => {
   beforeEach(() => {
@@ -30,12 +44,7 @@ describe('Node.js Logger', () => {
       expect(logger.getLevel()).toBe(LogLevel.WARN);
     });
 
-    it('should fall back to console when Winston is not available', () => {
-      // Mock Winston import failure
-      vi.mock('winston', () => {
-        throw new Error('Winston not found');
-      });
-
+    it('should write to the console when no transports are configured', () => {
       const consoleSpy = {
         debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
         info: vi.spyOn(console, 'info').mockImplementation(() => {}),
@@ -260,27 +269,154 @@ describe('Node.js Logger', () => {
     });
   });
 
-  describe('Winston integration', () => {
-    it('should handle Winston initialization gracefully', async () => {
-      // This test mainly ensures the async Winston loading doesn't break
-      const logger = new NodeLogger();
+  describe('transports', () => {
+    it('should emit the very first record, with no async initialization window', () => {
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
-      // Give time for async Winston initialization
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Regression test: the Winston implementation kicked off an un-awaited
+      // dynamic import in its constructor, so records logged before it
+      // resolved silently took a different path.
+      new NodeLogger({ level: LogLevel.DEBUG }).info('first');
 
-      expect(logger).toBeDefined();
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.mock.calls[0][0]).toContain('first');
     });
 
-    it('should map log levels correctly for Winston', () => {
-      const logger = new NodeLogger();
+    it('should route each level to the matching console method', () => {
+      const spies = {
+        debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
+        info: vi.spyOn(console, 'info').mockImplementation(() => {}),
+        warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
+        error: vi.spyOn(console, 'error').mockImplementation(() => {}),
+      };
 
-      // Test that all log levels work (even if Winston isn't available)
-      expect(() => {
-        logger.debug('debug');
-        logger.info('info');
-        logger.warn('warn');
-        logger.error('error');
-      }).not.toThrow();
+      const logger = new NodeLogger({ level: LogLevel.DEBUG });
+      logger.debug('d');
+      logger.info('i');
+      logger.warn('w');
+      logger.error('e');
+
+      expect(spies.debug).toHaveBeenCalledTimes(1);
+      expect(spies.info).toHaveBeenCalledTimes(1);
+      expect(spies.warn).toHaveBeenCalledTimes(1);
+      expect(spies.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('should build exactly the transports listed, in order', () => {
+      const first = recordingTransport();
+      const second = recordingTransport();
+
+      const logger = new NodeLogger({
+        transports: [
+          { type: 'custom', options: { transport: first } },
+          { type: 'custom', options: { transport: second } },
+        ],
+      });
+
+      expect(logger.getTransports()).toHaveLength(2);
+      expect(logger.getTransports()[0]).toBe(first);
+      expect(logger.getTransports()[1]).toBe(second);
+    });
+
+    it('should apply a per-transport level filter', () => {
+      const quiet = recordingTransport();
+
+      const logger = new NodeLogger({
+        level: LogLevel.DEBUG,
+        transports: [{ type: 'custom', level: LogLevel.ERROR, options: { transport: quiet } }],
+      });
+
+      logger.info('ignored');
+      logger.error('kept');
+
+      expect(quiet.entries.map((entry) => entry.message)).toEqual(['kept']);
+    });
+
+    it('should keep writing through healthy transports when one throws', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const healthy = recordingTransport();
+      const broken = {
+        type: 'broken',
+        write() {
+          throw new Error('destination is on fire');
+        },
+      };
+
+      const logger = new NodeLogger({
+        transports: [
+          { type: 'custom', options: { transport: broken } },
+          { type: 'custom', options: { transport: healthy } },
+        ],
+      });
+
+      expect(() => logger.info('still logged')).not.toThrow();
+      expect(healthy.entries).toHaveLength(1);
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+
+    it('should keep the other transports when one fails to initialize', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const healthy = recordingTransport();
+
+      const logger = new NodeLogger({
+        transports: [
+          // No options.transport: the custom factory rejects this one.
+          { type: 'custom', options: {} },
+          { type: 'custom', options: { transport: healthy } },
+        ],
+      });
+
+      expect(logger.getTransports()).toEqual([healthy]);
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+
+    it('should warn with an actionable message for an unregistered file transport', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // tests/file-transport.test.ts imports the module that registers 'file';
+      // this file deliberately does not, matching a main-entry consumer.
+      const logger = new NodeLogger({
+        transports: [{ type: 'file', options: { filename: 'logs/should-not-exist.log' } }],
+      });
+
+      expect(logger.getTransports()).toHaveLength(0);
+      expect(consoleSpy.mock.calls[0][0]).toContain("logan-logger/node");
+    });
+
+    it('should share transports with child loggers rather than rebuilding them', () => {
+      const shared = recordingTransport();
+      const parent = new NodeLogger({ transports: [{ type: 'custom', options: { transport: shared } }] });
+
+      const child = parent.child({ requestId: 'req-1' }) as NodeLogger;
+      const grandchild = child.child({ span: 'a' }) as NodeLogger;
+
+      expect(child.getTransports()[0]).toBe(shared);
+      expect(grandchild.getTransports()[0]).toBe(shared);
+
+      child.info('from child');
+
+      expect(shared.entries).toHaveLength(1);
+      expect(shared.entries[0].metadata).toEqual({ requestId: 'req-1' });
+    });
+
+    it('should honor config.timestamp and config.colorize in the text form', () => {
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      new NodeLogger({ timestamp: false, colorize: false }).info('bare');
+
+      expect(consoleSpy.mock.calls[0][0]).toBe('INFO: bare');
+    });
+
+    it('should emit the JSON envelope when format is json, never colorized', () => {
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      new NodeLogger({ format: 'json', colorize: true }).info('structured', { a: 1 });
+
+      const parsed = JSON.parse(consoleSpy.mock.calls[0][0]);
+      expect(parsed.level).toBe('info');
+      expect(parsed.message).toBe('structured');
+      expect(parsed.metadata).toEqual({ a: 1 });
+      expect(consoleSpy.mock.calls[0][0]).not.toContain('\u001b[');
     });
   });
 
@@ -297,6 +433,10 @@ describe('Node.js Logger', () => {
         expect(() => {
           logger.error('Production error');
         }).not.toThrow();
+
+        // NODE_ENV=production must not imply file logging. The implicit file
+        // transports were the cause of #44.
+        expect(logger.getTransports().map((transport) => transport.type)).toEqual(['console']);
       } finally {
         process.env.NODE_ENV = originalEnv;
       }

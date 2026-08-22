@@ -388,4 +388,121 @@ describe('Serialization Utilities', () => {
       );
     });
   });
+
+  describe('safeStringify cycle detection (#57)', () => {
+    it('should serialize a repeated sibling reference in full, not as [Circular]', () => {
+      const user = { id: 7, name: 'jo' };
+
+      const result = safeStringify({ actor: user, owner: user });
+
+      expect(JSON.parse(result)).toEqual({
+        actor: { id: 7, name: 'jo' },
+        owner: { id: 7, name: 'jo' },
+      });
+      expect(result).not.toContain('[Circular]');
+    });
+
+    it('should still report a direct self-reference as [Circular]', () => {
+      const node: any = { name: 'root' };
+      node.self = node;
+
+      expect(JSON.parse(safeStringify(node))).toEqual({ name: 'root', self: '[Circular]' });
+    });
+
+    it('should still report an indirect cycle as [Circular]', () => {
+      const parent: any = { name: 'parent' };
+      parent.child = { name: 'child', parent };
+
+      expect(JSON.parse(safeStringify(parent))).toEqual({
+        name: 'parent',
+        child: { name: 'child', parent: '[Circular]' },
+      });
+    });
+
+    it('should serialize the same object twice inside one array', () => {
+      const entity = { id: 1 };
+
+      expect(JSON.parse(safeStringify([entity, entity]))).toEqual([{ id: 1 }, { id: 1 }]);
+    });
+
+    it('should handle a cycle and a repeated reference in the same payload', () => {
+      const shared = { kind: 'shared' };
+      const root: any = { a: shared, b: shared };
+      root.loop = root;
+
+      expect(JSON.parse(safeStringify(root))).toEqual({
+        a: { kind: 'shared' },
+        b: { kind: 'shared' },
+        loop: '[Circular]',
+      });
+    });
+
+    it('should serialize a repeated Error instance at every occurrence', () => {
+      const error = new Error('boom');
+      error.stack = 'STACK';
+
+      const parsed = JSON.parse(safeStringify({ first: error, second: error }));
+
+      expect(parsed.first).toEqual({ name: 'Error', message: 'boom', stack: 'STACK' });
+      expect(parsed.second).toEqual(parsed.first);
+    });
+
+    it('should serialize an error and its cause when both reference a shared object', () => {
+      const request = { id: 'req-1' };
+      const cause = new Error('underlying') as any;
+      cause.stack = 'CAUSE_STACK';
+      cause.request = request;
+      const error = new Error('wrapper', { cause }) as any;
+      error.stack = 'STACK';
+      error.request = request;
+
+      const parsed = JSON.parse(safeStringify(error));
+
+      expect(parsed.request).toEqual({ id: 'req-1' });
+      expect(parsed.cause.request).toEqual({ id: 'req-1' });
+    });
+
+    it('should keep [undefined] for object properties and array holes', () => {
+      expect(safeStringify({ a: undefined })).toBe('{"a":"[undefined]"}');
+      expect(safeStringify([1, , 3])).toBe('[1,"[undefined]",3]');
+      expect(safeStringify(undefined)).toBe('"[undefined]"');
+    });
+
+    it('should leave top-level primitives, null, arrays and empty objects unchanged', () => {
+      expect(safeStringify('str')).toBe('"str"');
+      expect(safeStringify(42)).toBe('42');
+      expect(safeStringify(true)).toBe('true');
+      expect(safeStringify(null)).toBe('null');
+      expect(safeStringify([])).toBe('[]');
+      expect(safeStringify({})).toBe('{}');
+    });
+
+    it('should preserve Date values as ISO strings', () => {
+      const when = new Date('2026-08-22T04:15:30.123Z');
+
+      expect(safeStringify({ when })).toBe('{"when":"2026-08-22T04:15:30.123Z"}');
+    });
+
+    it('should emit [MaxDepth] instead of blowing the stack on deep nesting', () => {
+      const root: any = {};
+      let cursor = root;
+      for (let i = 0; i < 5000; i++) {
+        cursor.next = {};
+        cursor = cursor.next;
+      }
+
+      let result = '';
+      expect(() => {
+        result = safeStringify(root);
+      }).not.toThrow();
+      expect(result).toContain('[MaxDepth]');
+      expect(() => JSON.parse(result)).not.toThrow();
+    });
+
+    it('should respect an explicit maxDepth', () => {
+      const value = { a: { b: { c: 1 } } };
+
+      expect(safeStringify(value, undefined, { maxDepth: 2 })).toBe('{"a":{"b":"[MaxDepth]"}}');
+    });
+  });
 });
