@@ -20,21 +20,10 @@ export function safeStringify(obj: any, space?: number): string {
         seen.add(value);
       }
 
-      // Handle Error objects
+      // Handle Error objects. Delegates to the single shared serializer below
+      // so that safeStringify and serializeError cannot drift apart.
       if (value instanceof Error) {
-        return {
-          name: value.name,
-          message: value.message,
-          stack: value.stack,
-          ...Object.getOwnPropertyNames(value).reduce((acc, prop) => {
-            if (prop !== 'name' && prop !== 'message' && prop !== 'stack') {
-              // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access on Error
-              acc[prop] = (value as any)[prop];
-            }
-            return acc;
-            // biome-ignore lint/suspicious/noExplicitAny: Accumulator for dynamic properties
-          }, {} as any),
-        };
+        return serializeError(value);
       }
 
       // Handle functions
@@ -118,16 +107,59 @@ export function filterSensitiveData(
  * // Result: { name: 'Error', message: 'Something went wrong', stack: '...' }
  * ```
  */
+/**
+ * Properties emitted first, in this order, and never overwritable by a
+ * same-named own property on the error.
+ */
+const ERROR_CORE_PROPERTIES = ['name', 'message', 'stack'];
+
+/**
+ * Read a single own property off an error without letting it break
+ * serialization. Accessor properties run user code, which may throw.
+ */
+function readErrorProperty(error: Error, property: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(error, property);
+
+  if (!descriptor) {
+    return undefined;
+  }
+
+  if (descriptor.get) {
+    try {
+      return descriptor.get.call(error);
+    } catch {
+      return '[Throws]';
+    }
+  }
+
+  return descriptor.value;
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: Error serialization accepts arbitrary error types
 export function serializeError(error: any): any {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      // biome-ignore lint/suspicious/noExplicitAny: Spread Error to capture custom properties
-      ...(error as any), // Include any additional properties
-    };
+  if (!(error instanceof Error)) {
+    return error;
   }
-  return error;
+
+  const serialized: Record<string, unknown> = {
+    name: error.name,
+    message: error.message,
+  };
+
+  // Omit `stack` entirely when unavailable rather than emitting null.
+  if (error.stack !== undefined) {
+    serialized.stack = error.stack;
+  }
+
+  // All own properties, not just enumerable ones. `message` and `stack` are
+  // non-enumerable on a standard Error, so a spread would silently drop
+  // anything defined the same way.
+  for (const property of Object.getOwnPropertyNames(error)) {
+    if (ERROR_CORE_PROPERTIES.includes(property)) {
+      continue;
+    }
+    serialized[property] = readErrorProperty(error, property);
+  }
+
+  return serialized;
 }

@@ -298,5 +298,94 @@ describe('Serialization Utilities', () => {
 
       expect(serialized).toEqual(errorLike);
     });
+
+    it('should include non-enumerable own properties', () => {
+      const error = new Error('hidden');
+      Object.defineProperty(error, 'code', {
+        value: 'E_HIDDEN',
+        enumerable: false,
+        configurable: true,
+      });
+
+      const serialized = serializeError(error);
+
+      expect(serialized.code).toBe('E_HIDDEN');
+    });
+
+    it('should not let an own property overwrite name, message or stack', () => {
+      const error = new Error('the real message') as any;
+      Object.defineProperty(error, 'name', { value: 'Impostor', enumerable: true });
+
+      const serialized = serializeError(error);
+
+      expect(serialized.name).toBe('Impostor');
+      expect(serialized.message).toBe('the real message');
+      expect(Object.keys(serialized).filter((k) => k === 'name')).toHaveLength(1);
+    });
+
+    it('should emit name, message and stack first, in that order', () => {
+      const error = new Error('ordered') as any;
+      error.zzz = 1;
+      error.aaa = 2;
+
+      expect(Object.keys(serializeError(error)).slice(0, 3)).toEqual([
+        'name',
+        'message',
+        'stack',
+      ]);
+    });
+
+    it('should omit stack entirely when it is undefined', () => {
+      const error = new Error('no stack');
+      error.stack = undefined;
+
+      const serialized = serializeError(error);
+
+      expect('stack' in serialized).toBe(false);
+    });
+
+    it('should not throw when reading a getter that throws', () => {
+      const error = new Error('boom');
+      Object.defineProperty(error, 'exploding', {
+        get() {
+          throw new Error('getter blew up');
+        },
+        enumerable: true,
+        configurable: true,
+      });
+
+      expect(() => serializeError(error)).not.toThrow();
+      expect(serializeError(error).exploding).toBe('[Throws]');
+      expect(() => safeStringify({ err: error })).not.toThrow();
+    });
+
+    it('should include an ES2022 cause', () => {
+      const cause = new Error('underlying');
+      const error = new Error('wrapper', { cause });
+
+      const serialized = serializeError(error);
+
+      expect(serialized.cause).toBe(cause);
+    });
+
+    it('should agree with safeStringify for the same error', () => {
+      const build = () => {
+        const error = new Error('shared') as any;
+        error.stack = 'STACK';
+        error.enumerableProp = 'a';
+        Object.defineProperty(error, 'hiddenProp', {
+          value: 'b',
+          enumerable: false,
+          configurable: true,
+        });
+        return error;
+      };
+
+      // The two paths disagreed before they were unified: serializeError
+      // spread only enumerable own properties and so dropped hiddenProp.
+      expect(JSON.parse(safeStringify(build()))).toEqual(
+        JSON.parse(JSON.stringify(serializeError(build())))
+      );
+    });
   });
 });
