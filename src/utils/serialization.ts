@@ -252,25 +252,46 @@ function matchesAnyKey(fieldName: string, keys: PreparedKey[]): boolean {
   );
 }
 
+/**
+ * Build the redacted copy (SPEC §8.4).
+ *
+ * `copies` maps each source object to its copy, so a source object visited
+ * twice yields the same copy twice. That is what makes a cyclic input
+ * terminate, and it is why the copy is registered *before* its properties are
+ * walked: a reference back to an ancestor has to find the copy already in the
+ * map, or the cycle cannot reconnect and the recursion never bottoms out.
+ *
+ * The cycle is preserved rather than marked. `'[Circular]'` belongs to
+ * `safeStringify` (SPEC §4.1); minting it here too would put two functions in
+ * charge of what a cycle looks like, free to drift apart.
+ *
+ * Sharing is preserved for the same reason it terminates: two fields holding
+ * one object give two fields holding one copy. Breaking that apart would be
+ * extra work for a less faithful copy.
+ */
 // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
-function redact(obj: any, keys: PreparedKey[]): any {
+function redact(obj: any, keys: PreparedKey[], copies: Map<object, unknown>): any {
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
 
+  const seen = copies.get(obj);
+
+  if (seen !== undefined) {
+    return seen;
+  }
+
   const filtered = Array.isArray(obj) ? [] : {};
 
+  copies.set(obj, filtered);
+
   for (const [key, value] of Object.entries(obj)) {
-    if (matchesAnyKey(key, keys)) {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
-      (filtered as any)[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
-      (filtered as any)[key] = redact(value, keys);
-    } else {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
-      (filtered as any)[key] = value;
-    }
+    // A recursive call on a primitive returns it untouched, so the two cases
+    // the assignment used to split on collapse into one.
+    const replacement = matchesAnyKey(key, keys) ? '[REDACTED]' : redact(value, keys, copies);
+
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment for filtered object
+    (filtered as any)[key] = replacement;
   }
 
   return filtered;
@@ -291,6 +312,12 @@ function redact(obj: any, keys: PreparedKey[]): any {
  * Because matching is on whole tokens, a name like `mytoken` is one token and is
  * not redacted; pass your own keys if your codebase names fields that way.
  *
+ * The result mirrors the input's structure, cycles and shared references
+ * included (SPEC §8.4). Redaction produces a value, not a serialization, so it
+ * makes no promise that the result is JSON-encodable: hand it to
+ * {@link safeStringify}, which renders a cycle as `'[Circular]'`, rather than
+ * to `JSON.stringify`, which throws on one exactly as it would on the input.
+ *
  * @param obj - The object to filter
  * @param sensitiveKeys - Key names to redact, tokenized and matched case-insensitively
  * @returns A new object with sensitive values replaced with '[REDACTED]'
@@ -299,6 +326,11 @@ function redact(obj: any, keys: PreparedKey[]): any {
  * const data = { username: 'john', password: 'secret123', monkey: 'george' };
  * const filtered = filterSensitiveData(data);
  * // Result: { username: 'john', password: '[REDACTED]', monkey: 'george' }
+ *
+ * const cyclic: any = { password: 'hunter2' };
+ * cyclic.self = cyclic;
+ * safeStringify(filterSensitiveData(cyclic));
+ * // {"password":"[REDACTED]","self":"[Circular]"}
  * ```
  */
 export function filterSensitiveData(
@@ -307,7 +339,9 @@ export function filterSensitiveData(
   sensitiveKeys: string[] = DEFAULT_SENSITIVE_KEYS
   // biome-ignore lint/suspicious/noExplicitAny: Security utility filters arbitrary object types
 ): any {
-  return redact(obj, prepareKeys(sensitiveKeys));
+  // Built per call: a map shared across calls would carry identity state from
+  // one caller's object graph into the next.
+  return redact(obj, prepareKeys(sensitiveKeys), new Map<object, unknown>());
 }
 
 /**
