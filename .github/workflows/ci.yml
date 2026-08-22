@@ -75,6 +75,54 @@ jobs:
           rm -rf dist
           ./node_modules/.bin/vite build
 
+  conformance:
+    name: Treering Conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Pinned to a tag, never a branch: the fixtures are the contract this
+      # build is judged against, so which revision ran must be reproducible
+      # from the workflow file alone. Bump this deliberately when adopting a
+      # new fixture release.
+      - name: Checkout treering fixtures
+        uses: actions/checkout@v4
+        with:
+          repository: llbbl/treering
+          ref: fixtures-v0.1.0
+          path: .treering
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      # >= 22.13 required by pnpm 11.9.0; see note in test-node.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The runner skips its whole suite when it cannot find fixtures, so that
+      # a contributor without treering checked out can still run `pnpm test`.
+      # That is the right default locally and the wrong one here: without this
+      # guard a broken checkout would turn every conformance case into a
+      # silent pass. Fail before the suite gets the chance.
+      - name: Confirm fixtures were checked out
+        run: test -f .treering/fixtures/README.md
+
+      # Non-zero exit on any failing case, which fails the build.
+      - name: Run conformance suite
+        env:
+          TREERING_FIXTURES: ${{ github.workspace }}/.treering/fixtures
+        run: ./node_modules/.bin/vitest run tests/conformance --reporter=verbose
+
   test-bun:
     name: Test on Bun
     runs-on: ubuntu-latest

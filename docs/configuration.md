@@ -267,17 +267,68 @@ it comes from the search or from an explicit argument.
 A `package.json` with no `logan` key is reported as exactly that rather than as
 a missing file, since the file itself is plainly there.
 
-> **Neither the search nor `configPath` should point at untrusted content.**
-> `configPath` names a file to read, and any config file — found by the search
-> just as much as named explicitly — can declare a `file` transport whose
-> `options.filename` is an absolute path, which the transport resolves and
-> creates the parent directory for on first write.
->
-> The search reads `.loganrc` and `package.json#logan` from the working
-> directory, so a CLI or a CI job that calls it while sitting inside a
-> user-supplied repository is taking configuration from that repository. Pass an
-> explicit `cwd` you control, or skip file configuration entirely, in anything
-> that runs against someone else's checkout.
+### Trust model
+
+**A config file is trusted input.** `loadConfigFromFile()` treats the file it
+finds the way a build tool treats its own config: as something the person
+running the process wrote, or vouched for. It is not sandboxed, and the library
+does not attempt to make it safe to read from a directory you do not control.
+
+This is the same position eslint and vite take, and it is a smaller claim than
+theirs. Both of those execute arbitrary JavaScript out of the working directory
+during startup, so a hostile config file gets code execution. `logan-logger`
+2.1.0 removed that surface: `logan.config.js` is gone and the loader accepts
+JSON only, deliberately, because nothing in `LoggerConfig` needs to be computed.
+See [No JavaScript config](#no-javascript-config).
+
+What remains is a **write path**, and it is worth stating plainly rather than
+leaving implied. A config file can name a `file` transport:
+
+```json
+{ "transports": [{ "type": "file", "options": { "filename": "/absolute/path/app.log" } }] }
+```
+
+`filename` reaches `resolve()` and then `mkdirSync(..., { recursive: true })` on
+the transport's first write, so a config file chooses where the process creates
+a directory and appends a file — anywhere that process can already write.
+Nothing is executed and nothing is read back into the program.
+
+The write path is **not purely additive**, and that is the part worth knowing.
+The transport measures the file it opened and rotates it when it is already over
+`maxsize`, so pointing `filename` at an existing large file renames that file to
+`name.1` on the first write and unlinks whatever sat at `name.<maxFiles>`. With
+`maxFiles: 0` there is no archive to rename into and the target is unlinked
+outright:
+
+```json
+{ "transports": [{ "type": "file", "level": 0,
+  "options": { "filename": "/path/that/exists", "maxsize": 1, "maxFiles": 0 } }] }
+```
+
+So the honest ceiling is: a config file can pick a path the process can write
+to, and cause a file there to be created, appended to, renamed, or removed. It
+cannot read anything, and it cannot run anything.
+
+The `file` transport is only registered by the `logan-logger/node` and
+`logan-logger/bun` entry points, so a config naming it from the main or browser
+entry is warned about and skipped.
+
+The realistic way to meet this is not a malicious config; it is a **CLI or CI
+job that constructs a logger while sitting inside a repository somebody else
+supplied**. The search reads `.loganrc` and `package.json#logan` relative to the
+working directory, so in that setting the checkout under test is deciding how
+the tool logs. Two mitigations, either sufficient:
+
+```typescript
+// Pin the search to a directory you own, not the one you happen to be in.
+const config = await loadConfigFromFile(undefined, { cwd: packageRoot });
+
+// Or skip file configuration entirely when running against foreign content.
+const config = trustedCheckout ? await loadConfigFromFile() : {};
+```
+
+The same applies to `configPath`: it names a file to read, so pass a path you
+constructed, not one a user handed you.
 
 ### Which directory is searched
 
