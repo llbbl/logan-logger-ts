@@ -136,7 +136,7 @@ export class NodeLogger extends BaseLogger {
     }
   }
 
-  setLevel(level: LogLevel): void {
+  override setLevel(level: LogLevel): void {
     super.setLevel(level);
     if (this.winston) {
       this.winston.level = this.getWinstonLevel(level);
