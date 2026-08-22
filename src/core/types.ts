@@ -68,6 +68,15 @@ export interface LoggerConfig {
   metadata: Record<string, any>;
   /** Transport configurations for log output */
   transports?: TransportConfig[];
+  /**
+   * Ignore `LOG_LEVEL`, `LOG_FORMAT`, `LOG_TIMESTAMP` and `LOG_COLOR`.
+   *
+   * Environment variables normally sit at the top of the precedence chain so an
+   * operator can raise verbosity on a running service without a deploy. A
+   * library that must pin its own logging regardless of the host application's
+   * environment sets this instead.
+   */
+  ignoreEnvironment?: boolean;
 }
 
 /**

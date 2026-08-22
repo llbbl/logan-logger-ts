@@ -13,6 +13,7 @@ export {
 } from './core/transport.ts';
 export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/types.ts';
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
+export * from './utils/config-file.ts';
 export * from './utils/config.ts';
 export * from './utils/formatting.ts';
 // Deno-specific utilities

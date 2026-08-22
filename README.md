@@ -284,9 +284,15 @@ enum LogLevel {
 ```bash
 LOG_LEVEL=debug      # debug, info, warn, error, silent
 LOG_FORMAT=json      # json, text
-LOG_TIMESTAMP=true   # true, false
-LOG_COLOR=false      # true, false
+LOG_TIMESTAMP=true   # true/1/yes/on, false/0/no/off
+LOG_COLOR=false      # true/1/yes/on, false/0/no/off
 ```
+
+These sit at the **top** of the precedence chain — above configuration passed to
+`createLogger()` — so an operator can change logging on a running service without
+a deploy. Opt out with `createLogger({ ..., ignoreEnvironment: true })`. A value
+that does not parse is ignored with a warning rather than silently resolving to a
+default.
 
 > **📋 See [Environment Variables Documentation](./docs/environment-variables.md) for complete details, examples, and runtime-specific considerations.**
 

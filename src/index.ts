@@ -7,6 +7,7 @@ export * from './core/types.ts';
 
 // Runtime-specific exports
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
+export * from './utils/config-file.ts';
 export * from './utils/config.ts';
 export * from './utils/formatting.ts';
 // Utilities

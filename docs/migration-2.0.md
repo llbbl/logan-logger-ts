@@ -14,6 +14,8 @@ change at all; the ones that do are listed under **What breaks**.
 | `config.timestamp` / `config.colorize` | declared, ignored | honored (text form only) |
 | Repeated object references | `"[Circular]"` | serialized in full |
 | Child loggers | new Winston instance + file handles each | share the parent's transports |
+| `LOG_LEVEL` and friends | parsed, never applied | applied, highest precedence |
+| `config.metadata` | declared, never emitted | on every record |
 
 ## What breaks
 
@@ -85,7 +87,51 @@ Traversal is also depth-limited at 100 levels, emitting `"[MaxDepth]"` rather
 than overflowing the stack. Override with
 `safeStringify(value, space, { maxDepth })`.
 
-### 4. `colorize` actually colorizes
+### 4. Environment variables start taking effect
+
+`LOG_LEVEL`, `LOG_FORMAT`, `LOG_TIMESTAMP` and `LOG_COLOR` were parsed by
+`loadConfigFromEnvironment()` in 1.x, but nothing ever called it — a logger built
+by `createLogger()` never saw them. They are now wired in at the top of the
+precedence chain.
+
+**If any of these variables is already set in your environment, your logging
+changes on upgrade** even though your code did not. A process running with
+`LOG_LEVEL=debug` set — perhaps years ago, for a different tool — starts emitting
+debug output.
+
+Two other things changed with the wiring:
+
+- **Boolean parsing is no longer strict.** 1.x resolved any value other than the
+  literal `"true"` to `false`, so `LOG_TIMESTAMP=1` meant *off*. 2.0 accepts
+  `true/1/yes/on` and `false/0/no/off`, case-insensitively.
+- **Unparseable values are ignored with a warning** rather than silently
+  resolving to a default. `LOG_LEVEL=verbose` no longer becomes `info`.
+
+To pin your logging against the host environment:
+
+```typescript
+const logger = createLogger({ level: LogLevel.WARN, ignoreEnvironment: true });
+```
+
+Config files are still not in the precedence chain — `loadConfigFromFile()` is
+async and `createLogger()` is not. That is [#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+
+### 5. `config.metadata` is now emitted
+
+```typescript
+const logger = createLogger({ metadata: { service: 'api' } });
+logger.info('started');
+
+// 1.x: [ts] INFO: started
+// 2.0: [ts] INFO: started {"service":"api"}
+```
+
+`LoggerConfig.metadata` was documented as "default metadata to include with all
+log messages", carefully merged across configuration sources, and never read by
+the logger. It now seeds every record and is inherited by child loggers.
+Call-site metadata still wins on key collisions.
+
+### 6. `colorize` actually colorizes
 
 `config.colorize` was ignored by the shared formatter in 1.x. It now applies ANSI
 color to the level token in the text form — but only when stdout is a TTY, and
@@ -96,6 +142,9 @@ never in the JSON form. `NO_COLOR` and `FORCE_COLOR` are honored.
 ```bash
 pnpm remove winston      # no longer a peer dependency
 ```
+
+Also check your deployment environment for stale `LOG_*` variables, which now
+have an effect for the first time.
 
 Drop `winston` from any bundler `external` / `externals` list. If you were
 working around [#42](https://github.com/llbbl/logan-logger-ts/issues/42) on JSR,

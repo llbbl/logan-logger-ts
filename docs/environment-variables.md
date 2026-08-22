@@ -53,7 +53,7 @@ LOG_FORMAT=text
 **Controls whether timestamps are included in log output.**
 
 **Variable:** `LOG_TIMESTAMP`  
-**Values:** `true`, `false`  
+**Values:** `true`, `1`, `yes`, `on` / `false`, `0`, `no`, `off` (case-insensitive)  
 **Default:** `true`
 
 ```bash
@@ -69,8 +69,8 @@ LOG_TIMESTAMP=false
 **Controls whether colored output is used (when supported by runtime).**
 
 **Variable:** `LOG_COLOR`  
-**Values:** `true`, `false`  
-**Default:** Auto-detected based on runtime capabilities
+**Values:** `true`, `1`, `yes`, `on` / `false`, `0`, `no`, `off` (case-insensitive)  
+**Default:** Colored only when stdout is a terminal. `NO_COLOR` and `FORCE_COLOR` are honored.
 
 ```bash
 # Force colored output
@@ -170,12 +170,31 @@ env:
 
 ## Priority Order
 
-Environment variables are loaded in this priority order (highest to lowest):
+Highest to lowest:
 
-1. **Environment variables** (e.g., `LOG_LEVEL`)
+1. **Environment variables** (e.g. `LOG_LEVEL`)
 2. **Manual configuration** passed to `createLogger(config)`
 3. **Environment-based defaults** from `NODE_ENV`, `NEXT_PUBLIC_APP_ENV`, `ENVIRONMENT`
 4. **Library defaults**
+
+Environment variables sit at the top deliberately, so an operator can change
+logging on a running service without a deploy. A library that must pin its own
+logging regardless of the host application's environment opts out:
+
+```typescript
+const logger = createLogger({ level: LogLevel.WARN, ignoreEnvironment: true });
+```
+
+**Config files are not in this chain.** `loadConfigFromFile()` is exported and
+usable directly, but `createLogger()` is synchronous and cannot await it. See
+[#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+
+### Unrecognized values
+
+A variable that does not parse is **ignored with a warning**, falling through to
+the next source rather than resolving to a default. `LOG_LEVEL=verbose` does not
+silently become `info`, and `LOG_TIMESTAMP=maybe` does not silently turn
+timestamps off. Each distinct problem warns once per process.
 
 ## Runtime Considerations
 
@@ -183,6 +202,11 @@ Environment variables are loaded in this priority order (highest to lowest):
 All environment variables are supported through `process.env`.
 
 ### Browser
+`LOG_*` variables are **build-time** in browsers, not runtime — there is no
+`process.env` to read. Your bundler must inline them, and by default bundlers
+only inline their own prefixed names, so an unprefixed `LOG_LEVEL` will not be
+picked up unless you map it explicitly (for example via `define` in Vite).
+
 Environment variables must be made available at build time:
 - **Vite**: Variables prefixed with `VITE_`
 - **Next.js**: Variables prefixed with `NEXT_PUBLIC_`
