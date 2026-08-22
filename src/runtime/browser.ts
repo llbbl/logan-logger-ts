@@ -76,7 +76,7 @@ export class BrowserLogger extends BaseLogger {
     return env !== 'production' || this.level <= LogLevel.ERROR;
   }
 
-  protected shouldLog(level: LogLevel): boolean {
+  protected override shouldLog(level: LogLevel): boolean {
     // In browser, respect production environment
     if (!this.shouldLogInProduction() && level < LogLevel.ERROR) {
       return false;

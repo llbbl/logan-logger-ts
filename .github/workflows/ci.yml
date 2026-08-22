@@ -113,6 +113,12 @@ jobs:
       - name: Install Deno dependencies (frozen lockfile)
         run: deno install --frozen=true
 
+      # JSR publishes src/ rather than a build output, so this is the source
+      # Deno consumers type-check against. The test step below runs with
+      # --no-check, which is why two TS4114 errors shipped unnoticed.
+      - name: Type check every entry point
+        run: deno task check
+
       - name: Run Deno tests
         run: deno test --no-check --allow-read --allow-env tests/deno-simple.test.ts
 
