@@ -6,11 +6,15 @@
 
 A universal TypeScript logging library that works consistently across all JavaScript runtimes: Node.js, Deno, Bun, browsers, and WebAssembly environments.
 
+> **Upgrading from 1.x?** See the [2.0 migration guide](./docs/migration-2.0.md).
+> Winston is gone, file logging is opt-in, and repeated object references are no
+> longer reported as `[Circular]`.
+
 ## Features
 
 - 🌐 **Universal Runtime Support** - Works in Node.js, Deno, Bun, browsers, and WebAssembly
 - ⚛️ **Next.js Ready** - Full compatibility with App Router, Server Components, and API Routes
-- 🪶 **Zero Dependencies** - Core functionality with no required dependencies
+- 🪶 **Zero Dependencies** - No dependencies at all, required or optional, on any runtime
 - ⚡ **Performance First** - Lazy evaluation, zero-allocation logging, minimal memory footprint
 - 🎯 **TypeScript Native** - Full type safety with comprehensive type definitions
 - 🔧 **Flexible Configuration** - Environment-based auto-configuration or manual setup
@@ -170,19 +174,35 @@ const logger = createLoggerForEnvironment();
 
 Logan Logger provides runtime-specific entry points for optimal bundling and type safety:
 
-**🟢 Node.js with Winston Support:**
+**🟢 Node.js with file logging:**
 ```typescript
-import { createLogger, NodeLogger, createMorganStream } from 'logan-logger/node';
+import { createLogger, LogLevel, NodeLogger, createMorganStream } from 'logan-logger/node';
 
 const logger = new NodeLogger({
   transports: [
-    { type: 'file', options: { filename: 'app.log' } }
+    { type: 'console', options: {} },
+    {
+      type: 'file',
+      level: LogLevel.ERROR,
+      options: { filename: 'logs/error.log', maxsize: 5_242_880, maxFiles: 5 }
+    }
   ]
 });
 
 // Express/Morgan integration
 app.use(morgan('combined', { stream: createMorganStream(logger) }));
 ```
+
+File logging is **opt-in**: with no `transports` configured a logger writes to the
+console and nowhere else, whatever `NODE_ENV` says. The log directory is created
+lazily on the first write, so a logger that is configured but never used touches
+the disk zero times.
+
+The `file` transport is registered by the `logan-logger/node` and
+`logan-logger/bun` entry points. It is deliberately absent from the main
+`logan-logger` entry so that `node:fs` never reaches a browser bundle — configure
+a file transport from the main entry and you get a warning telling you which
+entry point to import instead.
 
 **🌐 Browser-Optimized (Webpack/Vite-Safe):**
 ```typescript
@@ -240,7 +260,7 @@ logger.info('User processed', safeData);
 | Runtime | Import Path | Status | Implementation | Features |
 |---------|-------------|--------|----------------|----------|
 | **Next.js 13+** | `logan-logger` | ✅ **Full** | **Auto-detection** | **Server/Client Components, API Routes, Edge Runtime** |
-| Node.js 20+ | `logan-logger/node` | ✅ Full | Winston + Console | File logging, transports, Morgan integration |
+| Node.js 20+ | `logan-logger/node` | ✅ Full | Console + File transports | File logging with size rotation, custom transports, Morgan integration |
 | Bun | `logan-logger/bun` | ✅ Full | NodeLogger adapter | Same as Node.js |
 | Browser | `logan-logger/browser` | ✅ Full | Console API | CSS styling, performance marks, grouping |
 | Deno | `@logan/logger/deno` (JSR) | ✅ Basic | BrowserLogger adapter | Console logging (native implementation planned) |
@@ -280,6 +300,56 @@ interface LoggerConfig {
   metadata: Record<string, any>;
   transports?: TransportConfig[];
 }
+```
+
+`timestamp` and `colorize` apply to the **text** form only. The JSON envelope
+always carries a timestamp and is never colorized, so a structured log stream
+stays parseable. `colorize` additionally defers to the terminal: ANSI escapes are
+suppressed when stdout is not a TTY, and the `NO_COLOR` / `FORCE_COLOR`
+conventions are honored.
+
+### Transports
+
+`transports` lists exactly where records go, in order. Omit it and you get the
+console alone.
+
+```typescript
+import { LogLevel, NodeLogger } from 'logan-logger/node';
+
+const logger = new NodeLogger({
+  transports: [
+    { type: 'console', options: { format: 'text', colorize: true } },
+    { type: 'file', level: LogLevel.ERROR, options: { filename: 'logs/error.log' } }
+  ]
+});
+```
+
+| Type | Available from | Options |
+|---|---|---|
+| `console` | everywhere | `format`, `timestamp`, `colorize` |
+| `file` | `logan-logger/node`, `logan-logger/bun` | `filename`, `maxsize`, `maxFiles`, `format`, `timestamp` |
+| `custom` | everywhere | `transport` — any object with a `write(entry)` method |
+
+Each transport is constructed behind its own guard: one failing to initialize
+warns and is dropped, and the rest keep working. The same applies at write time.
+
+A child logger **shares** its parent's transport instances, so
+`logger.child({ requestId })` per request costs no extra file handles.
+
+Plug in your own destination either inline:
+
+```typescript
+const logger = new NodeLogger({
+  transports: [{ type: 'custom', options: { transport: { type: 'syslog', write(entry) { /* … */ } } } }]
+});
+```
+
+or by name, so it can be selected from configuration:
+
+```typescript
+import { registerTransport } from 'logan-logger';
+
+registerTransport('syslog', (config, context) => new SyslogTransport(config.options));
 ```
 
 ## API Reference

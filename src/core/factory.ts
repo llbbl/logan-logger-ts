@@ -1,6 +1,6 @@
 import { BrowserLogger } from '../runtime/browser.ts';
 import { NodeLogger } from '../runtime/node.ts';
-import { getDefaultConfig } from '../utils/config.ts';
+import { getDefaultConfig, shouldColorize } from '../utils/config.ts';
 import { detectRuntime } from '../utils/runtime.ts';
 import { type ILogger, type LoggerConfig, LogLevel } from './types.ts';
 
@@ -96,7 +96,7 @@ export function createLoggerForEnvironment(): ILogger {
 
   const config: Partial<LoggerConfig> = {
     level: getLogLevelForEnvironment(env),
-    colorize: env !== 'production',
+    colorize: env !== 'production' && shouldColorize(),
     timestamp: true,
     format: env === 'production' ? 'json' : 'text',
   };

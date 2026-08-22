@@ -2,6 +2,7 @@
 
 export * from './core/factory.ts';
 export * from './core/logger.ts';
+export * from './core/transport.ts';
 export * from './core/types.ts';
 
 // Runtime-specific exports

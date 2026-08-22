@@ -3,7 +3,7 @@
 ## Core Development Tasks
 
 ### Phase 1: Research & Planning
-- [x] Research Winston compatibility across JavaScript runtimes (Node.js, Deno, Bun, WASM)
+- [x] Research Winston compatibility across JavaScript runtimes (Node.js, Deno, Bun, WASM) — dropped in 2.0, see #47
 - [x] Investigate alternative logging libraries for runtime-specific implementations
 - [x] Define common logging interface/API that works across all runtimes
 - [x] Document runtime-specific constraints and capabilities
@@ -15,7 +15,7 @@
 - [x] Define common log levels and formatting standards
 
 ### Phase 3: Runtime-Specific Implementations
-- [x] Implement Node.js logger (Winston-based if compatible)
+- [x] Implement Node.js logger (own console + file transports as of 2.0)
 - [x] Implement Deno logger (using browser adapter for now)
 - [x] Implement Bun logger (using Node.js adapter)
 - [x] Implement WASM/browser logger
@@ -71,7 +71,7 @@
 ### Compatibility Matrix
 | Runtime | Status | Primary Implementation | Fallback |
 |---------|--------|----------------------|----------|
-| Node.js | ✅ | Winston | Console |
+| Node.js | ✅ | Console + File transports | Console |
 | Deno    | ✅ | Browser adapter | Console |
 | Bun     | ✅ | Node.js adapter | Console |
 | Browser | ✅ | Console API | Console |

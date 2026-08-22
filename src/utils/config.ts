@@ -1,14 +1,46 @@
 import { type LoggerConfig, LogLevel } from '../core/types.ts';
 import { detectRuntime } from './runtime.ts';
 
-export function getDefaultConfig(): LoggerConfig {
+/**
+ * Whether colored output is appropriate right now.
+ *
+ * `capabilities.colorSupport` answers whether the runtime *can* colorize.
+ * This answers whether it *should*: writing ANSI escapes into a redirected
+ * file or a log shipper is worse than writing none, so a non-TTY stdout
+ * disables color unless the caller forces it. Honors the `NO_COLOR` and
+ * `FORCE_COLOR` conventions.
+ * @returns True when the level token should carry ANSI color
+ */
+export function shouldColorize(): boolean {
   const runtime = detectRuntime();
 
+  if (!runtime.capabilities.colorSupport) {
+    return false;
+  }
+
+  // No process object means a browser, where the console applies its own
+  // styling and there is no stream to pollute.
+  if (typeof process === 'undefined' || !process.env) {
+    return true;
+  }
+
+  if (process.env.NO_COLOR) {
+    return false;
+  }
+
+  if (process.env.FORCE_COLOR) {
+    return process.env.FORCE_COLOR !== '0';
+  }
+
+  return process.stdout?.isTTY === true;
+}
+
+export function getDefaultConfig(): LoggerConfig {
   return {
     level: LogLevel.INFO,
     format: 'text',
     timestamp: true,
-    colorize: runtime.capabilities.colorSupport,
+    colorize: shouldColorize(),
     metadata: {},
     transports: [
       {

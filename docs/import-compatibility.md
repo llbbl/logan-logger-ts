@@ -28,7 +28,8 @@ does not need to guess.
 ## Related
 
 - [#42](https://github.com/llbbl/logan-logger-ts/issues/42) — JSR distribution
-  silently falls back to console logging because the bare `winston` import is
-  rewritten to `./winston` during publish. The npm distribution is unaffected.
+  silently fell back to console logging because the bare `winston` import was
+  rewritten to `./winston` during publish. **Resolved in 2.0**: Winston is gone,
+  so there is no bare import left to rewrite.
 - [#43](https://github.com/llbbl/logan-logger-ts/issues/43) — npm dual-publish
   layout previously broke named imports under tsx / CJS interop.

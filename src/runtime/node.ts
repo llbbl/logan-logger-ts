@@ -1,150 +1,80 @@
 import { BaseLogger } from '../core/logger.ts';
-import { type LogEntry, type LoggerConfig, LogLevel } from '../core/types.ts';
-import { safeStringify } from '../utils/serialization.ts';
+import { createTransports, type Transport } from '../core/transport.ts';
+import type { LogEntry, LoggerConfig } from '../core/types.ts';
 
+/**
+ * Logger for Node.js and Bun.
+ *
+ * Writes through an explicit list of transports built from
+ * `LoggerConfig.transports`. With no transports configured it writes to the
+ * console and nowhere else — file logging is opt-in, never implied by
+ * `NODE_ENV`.
+ *
+ * @example
+ * ```typescript
+ * import { NodeLogger, LogLevel } from 'logan-logger/node';
+ *
+ * const logger = new NodeLogger({
+ *   level: LogLevel.INFO,
+ *   transports: [
+ *     { type: 'console', options: {} },
+ *     { type: 'file', level: LogLevel.ERROR, options: { filename: 'logs/error.log' } },
+ *   ],
+ * });
+ * ```
+ */
 export class NodeLogger extends BaseLogger {
-  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
-  private winston?: any;
+  private readonly transports: Transport[];
 
-  constructor(config: Partial<LoggerConfig> = {}) {
+  /**
+   * @param config - Logger configuration
+   * @param transports - Pre-built transports to adopt instead of building new
+   * ones. Used internally so a child logger shares its parent's destinations.
+   */
+  constructor(config: Partial<LoggerConfig> = {}, transports?: Transport[]) {
     super(config);
-    this.initializeWinston();
+    this.transports = transports ?? createTransports(config);
   }
 
-  private async initializeWinston(): Promise<void> {
-    try {
-      // Try to load Winston if available (optional peer dependency).
-      // Use a dynamic specifier so JSR's publish pipeline won't rewrite the
-      // bare import 'winston' to a relative './winston' path. This keeps
-      // resolution at runtime, where Node will find the npm package if
-      // installed and throw harmlessly otherwise.
-      const winstonModule = 'winston';
-      // biome-ignore lint/suspicious/noTsIgnore: Winston optional dependency - error only exists in CI without Winston
-      // @ts-ignore - Winston is an optional peer dependency, may not be installed in all environments
-      const winston = await import(winstonModule);
-      this.winston = this.createWinstonLogger(winston);
-    } catch (error) {
-      // Winston not available, will fall back to console
-      console.warn('[logan-logger] Winston not found, falling back to console logging:', error);
-    }
+  /** The transports this logger writes through. */
+  getTransports(): readonly Transport[] {
+    return this.transports;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Winston is an optional peer dependency, types not guaranteed
-  private createWinstonLogger(winston: any): any {
-    const logFormat = winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.errors({ stack: true }),
-      winston.format.json(),
-      winston.format.prettyPrint()
-    );
-
-    const consoleFormat = winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp({ format: 'HH:mm:ss' }),
-      // biome-ignore lint/suspicious/noExplicitAny: Winston format callback parameter has dynamic shape
-      winston.format.printf(({ timestamp, level, message, ...meta }: any) => {
-        const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-        return `${timestamp} [${level}]: ${message} ${metaStr}`;
-      })
-    );
-
-    const logger = winston.createLogger({
-      level: this.getWinstonLevel(this.level),
-      format: logFormat,
-      transports: [
-        new winston.transports.Console({
-          format: process.env.NODE_ENV === 'production' ? logFormat : consoleFormat,
-        }),
-      ],
-    });
-
-    // Add file transports for production
-    if (process.env.NODE_ENV === 'production') {
-      logger.add(
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error',
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        })
-      );
-
-      logger.add(
-        new winston.transports.File({
-          filename: 'logs/combined.log',
-          maxsize: 5242880, // 5MB
-          maxFiles: 10,
-        })
-      );
+  /** Release every transport's resources. */
+  close(): void {
+    for (const transport of this.transports) {
+      transport.close?.();
     }
-
-    return logger;
   }
 
   protected writeLog(entry: LogEntry): void {
-    if (this.winston) {
-      this.winston.log({
-        level: this.getWinstonLevel(entry.level),
-        message: entry.message,
-        timestamp: entry.timestamp,
-        ...entry.metadata,
-      });
-    } else {
-      // Fallback to console
-      this.writeToConsole(entry);
+    for (const transport of this.transports) {
+      if (transport.level !== undefined && entry.level < transport.level) {
+        continue;
+      }
+
+      try {
+        transport.write(entry);
+      } catch (error) {
+        // One broken destination must not silence the others.
+        console.warn(`[logan-logger] transport '${transport.type}' failed to write:`, error);
+      }
     }
   }
 
   protected createChild(): BaseLogger {
-    return new NodeLogger(this.config);
-  }
-
-  private writeToConsole(entry: LogEntry): void {
-    const timestamp = entry.timestamp.toISOString();
-    const level = LogLevel[entry.level].toLowerCase();
-    const metaStr = entry.metadata ? ` ${safeStringify(entry.metadata)}` : '';
-    const message = `[${timestamp}] ${level.toUpperCase()}: ${entry.message}${metaStr}`;
-
-    switch (entry.level) {
-      case LogLevel.DEBUG:
-        console.debug(message);
-        break;
-      case LogLevel.INFO:
-        console.info(message);
-        break;
-      case LogLevel.WARN:
-        console.warn(message);
-        break;
-      case LogLevel.ERROR:
-        console.error(message);
-        break;
-    }
-  }
-
-  private getWinstonLevel(level: LogLevel): string {
-    switch (level) {
-      case LogLevel.DEBUG:
-        return 'debug';
-      case LogLevel.INFO:
-        return 'info';
-      case LogLevel.WARN:
-        return 'warn';
-      case LogLevel.ERROR:
-        return 'error';
-      default:
-        return 'info';
-    }
-  }
-
-  setLevel(level: LogLevel): void {
-    super.setLevel(level);
-    if (this.winston) {
-      this.winston.level = this.getWinstonLevel(level);
-    }
+    // Share the transport instances. A per-request child logger must not open
+    // a second handle on the same file.
+    return new NodeLogger(this.config, this.transports);
   }
 }
 
-// Create Morgan-compatible stream
+/**
+ * Create a Morgan-compatible stream that forwards HTTP access logs to a logger.
+ * @param logger - The logger to write through
+ * @returns An object with a `write` method Morgan can use
+ */
 export function createMorganStream(logger: NodeLogger): { write: (message: string) => void } {
   return {
     write: (message: string) => {

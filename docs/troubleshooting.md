@@ -52,10 +52,12 @@ npm install -D ignore-loader
 ```
 Module not found: Can't resolve 'fs'
 Import trace for requested module:
-./node_modules/winston/dist/winston/transports/file.js
+./node_modules/logan-logger/dist/chunks/file-transport-*.mjs
 ```
 
-**Cause:** Server-side code (winston) being imported in browser context.
+**Cause:** Node-only code (the file transport) being imported in a browser context.
+Note that `logan-logger` and `logan-logger/browser` never reach it; only
+`logan-logger/node` and `logan-logger/bun` do.
 
 **Solutions:**
 
@@ -63,7 +65,7 @@ Import trace for requested module:
    ```typescript
    // ❌ Don't import server logger in client components
    'use client';
-   import serverLogger from '@/utils/serverLogger'; // Contains winston
+   import serverLogger from '@/utils/serverLogger'; // Imports logan-logger/node
 
    // ✅ Use browser-safe logger in client components
    'use client';
@@ -224,9 +226,9 @@ const logger = createLogger({
 
 #### Browser Issues
 
-**Error: "winston is not defined"**
+**Error: "Can't resolve 'node:fs'"**
 
-**Cause:** Server-specific logger used in browser.
+**Cause:** Server-specific entry point (`logan-logger/node`) used in a browser build.
 
 **Solution:**
 ```typescript
@@ -252,19 +254,17 @@ console.log('Current level:', logger.getLevel());
 
 #### Node.js Issues
 
-**Error: "winston.createLogger is not a function"**
+**Warning: "the 'file' transport is not registered"**
 
-**Install winston:**
-```bash
-npm install winston
-```
+**Cause:** A `{ type: 'file' }` transport was configured from the main entry
+point, which deliberately does not pull in `node:fs`.
 
-**Or use generic logger:**
+**Solution — import from the Node entry point:**
 ```typescript
-// ✅ No winston dependency
+// ❌ file transport unavailable here
 import { createLogger } from 'logan-logger';
 
-// ✅ Explicit winston usage
+// ✅ registers the file transport
 import { createLogger } from 'logan-logger/node';
 ```
 

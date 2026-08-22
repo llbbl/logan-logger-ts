@@ -1,5 +1,15 @@
 # JSR Winston Import Bug
 
+> **Resolved in 2.0.0 — kept as a record of the failure mode.**
+>
+> Winston was removed entirely in 2.0.0 ([#47](https://github.com/llbbl/logan-logger-ts/issues/47)).
+> There is no bare `winston` import left for JSR's publish pipeline to rewrite, and the
+> `const winstonModule = 'winston'` indirection described below has been deleted along
+> with it. `src/runtime/node.ts` now contains no dynamic imports at all — `deno publish
+> --dry-run` reports zero `unanalyzable-dynamic-import` warnings against it.
+>
+> If you are on 1.x, everything below still applies.
+
 ## Symptom
 
 Consumers installing `@logan/logger` from JSR (e.g., `pnpm add jsr:@logan/logger`)

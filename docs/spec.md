@@ -16,7 +16,7 @@ Logan Logger (`logan-logger`) is a universal TypeScript logging library designed
 
 ### 2. Minimal Dependencies
 - Zero dependencies for core functionality
-- Optional runtime-specific dependencies (e.g., Winston for Node.js)
+- No runtime dependencies at all, on any runtime
 - Dependency injection pattern for extensibility
 
 ### 3. Performance First
@@ -87,9 +87,9 @@ interface RuntimeCapabilities {
 ## Runtime-Specific Implementations
 
 ### Node.js Logger
-- **Primary**: Winston-based implementation with file rotation, transports
-- **Fallback**: Console-based logger with formatting
-- **Features**: File system logging, process info, color support, streams
+- **Primary**: Own console and file transports built on `node:fs`
+- **Features**: Size-based file rotation, opt-in file logging, custom transports,
+  process info, color support, streams
 
 ### Deno Logger
 - **Primary**: Native Deno logging APIs
@@ -315,7 +315,7 @@ logan-logger-ts/
 
 | Runtime | Version | Status | Implementation | Dependencies |
 |---------|---------|--------|----------------|--------------|
-| Node.js | 20+     | ✅ Full | Winston wrapper | winston (optional) |
+| Node.js | 20+     | ✅ Full | Console + File transports | None |
 | Deno | 1.0+    | 🟡 Planned | Native APIs | None |
 | Bun | 0.5+    | 🟡 Planned | Native APIs | None |
 | Browser | Modern  | 🟡 Planned | Console API | None |

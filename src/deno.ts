@@ -4,7 +4,14 @@
 export { createLogger, createLoggerForEnvironment } from './core/factory.ts';
 
 // Re-export core functionality optimized for Deno
-export type { ILogger, LoggerConfig, LogLevel } from './core/types.ts';
+export {
+  ConsoleTransport,
+  createTransports,
+  registerTransport,
+  type Transport,
+  type TransportFactory,
+} from './core/transport.ts';
+export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/types.ts';
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
 export * from './utils/config.ts';
 export * from './utils/formatting.ts';
