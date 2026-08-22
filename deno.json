@@ -3,14 +3,11 @@
   "version": "2.0.0",
   "exports": "./src/index.ts",
   "compilerOptions": {
-    "allowJs": true,
     "lib": [
       "deno.window",
       "dom"
     ],
-    "strict": true,
-    "sourceMap": false,
-    "inlineSourceMap": false
+    "strict": true
   },
   "test": {
     "include": [
@@ -19,7 +16,7 @@
   },
   "tasks": {
     "test": "deno test --allow-read --allow-env",
-    "check": "deno check src/index.ts"
+    "check": "deno check src/index.ts src/node.ts src/browser.ts src/deno.ts src/bun.ts"
   },
   "publish": {
     "include": [
