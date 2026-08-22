@@ -9,6 +9,8 @@ export {
   createTransports,
   registerTransport,
   type Transport,
+  type TransportBuilder,
+  type TransportContext,
   type TransportFactory,
 } from './core/transport.ts';
 export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/types.ts';

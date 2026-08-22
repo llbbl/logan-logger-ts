@@ -272,10 +272,10 @@ function normalizeTransport(
     return undefined;
   }
 
-  // Not narrowed to the built-in union: registerTransport() accepts any name,
-  // and createTransports() already reports one it cannot resolve.
+  // Any name is accepted, matching registerTransport(); createTransports()
+  // already reports one it cannot resolve.
   const transport: TransportConfig = {
-    type: entry.type as TransportConfig['type'],
+    type: entry.type,
     options: (entry.options as Record<string, unknown>) ?? {},
   };
 

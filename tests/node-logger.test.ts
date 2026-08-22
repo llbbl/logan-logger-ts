@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Transport } from '../src/core/transport.ts';
-import { type LogEntry, type LoggerConfig, LogLevel } from '../src/core/types.ts';
+import type { Transport, TransportContext } from '../src/core/transport.ts';
+import { registerTransport } from '../src/core/transport.ts';
+import {
+  type LogEntry,
+  type LoggerConfig,
+  LogLevel,
+  type TransportConfig,
+} from '../src/core/types.ts';
 import { createMorganStream, NodeLogger } from '../src/runtime/node.ts';
 
 /** A transport that keeps what it was given, for assertions. */
@@ -397,6 +403,93 @@ describe('Node.js Logger', () => {
 
       expect(shared.entries).toHaveLength(1);
       expect(shared.entries[0].metadata).toEqual({ requestId: 'req-1' });
+    });
+
+    it('should accept a transport registered under a name of its own', () => {
+      const received: TransportContext[] = [];
+      const metrics = recordingTransport();
+
+      registerTransport('metrics', (_config, context) => {
+        received.push(context);
+        return metrics;
+      });
+
+      // Annotated rather than inferred: the point of this case is that a
+      // registered name type-checks as a TransportConfig without a cast.
+      const transports: TransportConfig[] = [{ type: 'metrics', options: {} }];
+      const logger = new NodeLogger({
+        format: 'json',
+        timestamp: false,
+        colorize: true,
+        transports,
+      });
+
+      logger.info('measured');
+
+      expect(metrics.entries.map((entry) => entry.message)).toEqual(['measured']);
+      expect(received).toEqual([{ format: 'json', timestamp: false, colorize: true }]);
+    });
+
+    it('should call options.transport as a factory and use what it returns', () => {
+      const received: TransportContext[] = [];
+      const built = recordingTransport();
+
+      const logger = new NodeLogger({
+        format: 'json',
+        timestamp: false,
+        colorize: true,
+        transports: [
+          {
+            type: 'custom',
+            options: {
+              transport: (context: TransportContext) => {
+                received.push(context);
+                return built;
+              },
+            },
+          },
+        ],
+      });
+
+      expect(logger.getTransports()).toEqual([built]);
+
+      logger.info('via factory');
+
+      expect(built.entries.map((entry) => entry.message)).toEqual(['via factory']);
+      expect(received).toEqual([{ format: 'json', timestamp: false, colorize: true }]);
+    });
+
+    it('should apply a per-transport level filter to a factory-built transport', () => {
+      const quiet = recordingTransport();
+
+      const logger = new NodeLogger({
+        level: LogLevel.DEBUG,
+        transports: [
+          { type: 'custom', level: LogLevel.ERROR, options: { transport: () => quiet } },
+        ],
+      });
+
+      logger.info('ignored');
+      logger.error('kept');
+
+      expect(quiet.entries.map((entry) => entry.message)).toEqual(['kept']);
+    });
+
+    it('should reject a factory that does not produce a transport', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const healthy = recordingTransport();
+
+      const logger = new NodeLogger({
+        transports: [
+          { type: 'custom', options: { transport: () => ({ type: 'no-write' }) } },
+          { type: 'custom', options: { transport: healthy } },
+        ],
+      });
+
+      expect(logger.getTransports()).toEqual([healthy]);
+      expect(consoleSpy.mock.calls[0][1]).toMatchObject({
+        message: expect.stringContaining('write(entry) method'),
+      });
     });
 
     it('should honor config.timestamp and config.colorize in the text form', () => {

@@ -7,6 +7,8 @@ export {
   createTransports,
   registerTransport,
   type Transport,
+  type TransportBuilder,
+  type TransportContext,
   type TransportFactory,
 } from './core/transport.ts';
 
