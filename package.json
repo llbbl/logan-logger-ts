@@ -1,6 +1,6 @@
 {
   "name": "logan-logger",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "packageManager": "pnpm@11.9.0",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
   "main": "dist/index.cjs",
