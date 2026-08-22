@@ -570,6 +570,44 @@ logger.info('User processed', filterSensitiveData({
 Redaction recurses into nested objects and arrays, preserving container types.
 Passing your own key list **replaces** the defaults rather than extending them.
 
+#### What the copy preserves
+
+Redaction produces a **value**, not a serialization. The returned copy mirrors
+the input's structure and changes nothing but the sensitive values — which means
+**a cyclic input yields a cyclic copy**:
+
+```ts
+const input = { name: 'x', password: 'hunter2' };
+input.self = input;
+
+const redacted = filterSensitiveData(input);
+redacted.self === redacted;   // true — the cycle survives
+```
+
+So **pass the result to `safeStringify`, not `JSON.stringify`**. Redaction makes
+no claim that its output is JSON-encodable, and `JSON.stringify` throws on the
+copy exactly as it would have on the input:
+
+```ts
+safeStringify(redacted);
+// {"name":"x","password":"[REDACTED]","self":"[Circular]"}
+
+JSON.stringify(redacted);
+// TypeError: Converting circular structure to JSON
+```
+
+`"[Circular]"` is `safeStringify`'s marker and appears only at serialization
+time. Redaction never mints it — one function decides what a cycle looks like,
+so the two cannot drift apart. Logging the result goes through `safeStringify`
+already, so the common path needs no thought.
+
+The same rule keeps **repeated references shared**: if two fields of the input
+hold one object, the two fields of the copy hold one copy of it, redacted once.
+Serialization still renders both occurrences in full, since a DAG is not a cycle.
+
+Earlier versions had no cycle tracking here at all: redacting a self-referencing
+object overflowed the stack.
+
 #### How a field name is matched
 
 Matching is on whole tokens, never substrings, which is why `api_key` is

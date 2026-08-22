@@ -408,9 +408,19 @@ obj.self = obj;
 logger.info('Safe object', obj);   // -> { "name": "root", "self": "[Circular]" }
 ```
 
-Do **not** reach for `filterSensitiveData` here — it is a redaction utility, it
-does not track cycles, and it will overflow the stack on a self-referencing
-object. See [Redaction](./configuration.md#redaction) for what it does do.
+`filterSensitiveData` is **not** the tool for this. It is safe to call on a
+cyclic object — it no longer overflows the stack — but it does not *render* the
+cycle: it returns a copy that is still cyclic, so `JSON.stringify` on that copy
+throws just as it would on the original. Rendering is `safeStringify`'s job, and
+the two compose:
+
+```typescript
+safeStringify(filterSensitiveData(obj));
+// {"name":"root","password":"[REDACTED]","self":"[Circular]"}
+```
+
+See [Redaction](./configuration.md#redaction) for what `filterSensitiveData`
+does do.
 
 ## Version-Specific Issues
 

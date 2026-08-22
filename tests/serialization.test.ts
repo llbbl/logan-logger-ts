@@ -704,6 +704,11 @@ describe('Serialization Utilities', () => {
 
     it('should keep [undefined] for object properties and array holes', () => {
       expect(safeStringify({ a: undefined })).toBe('{"a":"[undefined]"}');
+      // The hole is the point. `biome check --write` rewrites this to
+      // [1, undefined, 3], which still passes while testing something else
+      // entirely -- a hole and an explicit undefined take different paths
+      // through the indexed loop in sanitize().
+      // biome-ignore lint/suspicious/noSparseArray: an array hole is the case under test
       expect(safeStringify([1, , 3])).toBe('[1,"[undefined]",3]');
       expect(safeStringify(undefined)).toBe('"[undefined]"');
     });
@@ -743,6 +748,108 @@ describe('Serialization Utilities', () => {
       const value = { a: { b: { c: 1 } } };
 
       expect(safeStringify(value, undefined, { maxDepth: 2 })).toBe('{"a":{"b":"[MaxDepth]"}}');
+    });
+  });
+
+  // The conformance fixtures pin what a redacted cyclic value *serializes* to.
+  // These cover what they cannot see: the shape of the returned value itself.
+  describe('filterSensitiveData cycle preservation (#78)', () => {
+    it('should not throw on a self-referencing object', () => {
+      const input: any = { name: 'x', password: 'hunter2' };
+      input.self = input;
+
+      expect(() => filterSensitiveData(input)).not.toThrow();
+    });
+
+    it('should return a copy whose cycle is genuinely circular', () => {
+      const input: any = { name: 'x' };
+      input.self = input;
+
+      const result = filterSensitiveData(input);
+
+      // Not '[Circular]', not a second copy — the same object, as the input was.
+      expect(result.self).toBe(result);
+    });
+
+    it('should return a copy, leaving the original unmutated', () => {
+      const input: any = { name: 'x', password: 'hunter2' };
+      input.self = input;
+
+      const result = filterSensitiveData(input);
+
+      expect(result).not.toBe(input);
+      expect(input.password).toBe('hunter2');
+      expect(input.self).toBe(input);
+    });
+
+    it('should preserve a cycle that closes through an array', () => {
+      const input: any = { name: 'x', items: [] };
+      input.items.push(input);
+
+      const result = filterSensitiveData(input);
+
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items[0]).toBe(result);
+    });
+
+    it('should preserve a cycle that closes below the root', () => {
+      const input: any = { name: 'root', child: { name: 'child' } };
+      input.child.parent = input.child;
+
+      const result = filterSensitiveData(input);
+
+      expect(result).not.toBe(result.child);
+      expect(result.child.parent).toBe(result.child);
+    });
+
+    it('should keep repeated references shared in the copy', () => {
+      const shared = { id: 1 };
+      const input = { a: shared, b: shared };
+
+      const result = filterSensitiveData(input);
+
+      expect(result.a).toBe(result.b);
+      expect(result.a).not.toBe(shared);
+    });
+
+    it('should redact through a shared reference, consistently in both fields', () => {
+      const shared = { id: 1, token: 't' };
+      const input = { a: shared, b: shared };
+
+      const result = filterSensitiveData(input);
+
+      // Redaction reaches the shared object, not just its first occurrence.
+      expect(result.a.token).toBe('[REDACTED]');
+      expect(result.b.token).toBe('[REDACTED]');
+      expect(result.a).toBe(result.b);
+      expect(shared.token).toBe('t');
+    });
+
+    it('should not carry identity state between two separate calls', () => {
+      const shared = { id: 1 };
+
+      const first = filterSensitiveData({ a: shared });
+      const second = filterSensitiveData({ a: shared });
+
+      expect(first.a).not.toBe(second.a);
+    });
+
+    it('should compose with safeStringify to render the cycle as [Circular]', () => {
+      const input: any = { name: 'x', password: 'hunter2' };
+      input.self = input;
+
+      expect(safeStringify(filterSensitiveData(input))).toBe(
+        '{"name":"x","password":"[REDACTED]","self":"[Circular]"}'
+      );
+    });
+
+    it('should leave a redacted cyclic value unserializable by JSON.stringify', () => {
+      // Redaction does not claim to make a value encodable; the copy throws
+      // exactly where the input did. safeStringify is the supported path.
+      const input: any = { password: 'hunter2' };
+      input.self = input;
+
+      expect(() => JSON.stringify(filterSensitiveData(input))).toThrow(TypeError);
     });
   });
 });
