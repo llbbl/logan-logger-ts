@@ -11,7 +11,9 @@ pnpm install
 `pnpm` is required — the repo pins it via `packageManager`, and `pnpm-workspace.yaml`
 carries supply-chain settings (`minimumReleaseAge`, `blockExoticSubdeps`,
 `strictDepBuilds`) that npm and yarn will not honour. pnpm 11 needs Node ≥ 22.13
-for the toolchain, even though the package itself supports Node 20.19+.
+for the toolchain, even though the package's own floor is Node 22.12 — 22.12.0
+is where `require(esm)` shipped unflagged, which is the boundary that matters
+for a dual ESM/CJS package, so the floor is not raised to suit pnpm.
 
 ## Commands
 
@@ -101,7 +103,7 @@ and may need a spec change first.
 
 1. Branch from `main` (or from `1.x` for a maintenance fix).
 2. Make sure `pnpm test`, `pnpm typecheck`, `pnpm lint` and `deno task check` all pass.
-3. Open the PR. CI runs Node 20.19 / 22.12 / 24, Bun, Deno, a build test and a security scan.
+3. Open the PR. CI runs Node 22.12 / 24 / 26, Bun, Deno, a build test and a security scan.
 
 ### Commit messages drive releases
 

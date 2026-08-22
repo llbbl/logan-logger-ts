@@ -6,7 +6,8 @@
 # release: CI ran pnpm 8 while auto-release ran pnpm 11, and only the
 # latter stopped reading `pnpm.overrides` from package.json.
 #
-# Node 22.12 is the supported floor (see engines.node); CI covers 22.12 and 24.
+# Node 22.12 is the supported floor (see engines.node); CI covers 22.12, 24
+# and 26. Node 20 is EOL as of 2026-04-30 and is no longer supported.
 
 [tools]
 node = "24"

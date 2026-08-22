@@ -8,7 +8,7 @@ surface that reflects what is actually available there.
 |---|---|---|---|
 | Auto-detect | `logan-logger` | picked at runtime | Safe in a browser bundle; no `node:` specifier |
 | Next.js 13+ | `logan-logger` | picked at runtime | Server and Client Components, API Routes, Edge |
-| Node.js 20+ | `logan-logger/node` | `NodeLogger` | File transport, Morgan integration |
+| Node.js 22.12+ | `logan-logger/node` | `NodeLogger` | File transport, Morgan integration |
 | Bun | `logan-logger/bun` | `NodeLogger` | Same as Node |
 | Browser | `logan-logger/browser` | `BrowserLogger` | CSS styling, performance marks, grouping |
 | Deno | `jsr:@logan/logger` | `BrowserLogger` | Console only; native implementation planned |
