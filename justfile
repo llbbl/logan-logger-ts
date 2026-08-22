@@ -29,6 +29,11 @@ test *ARGS:
 test-run:
     pnpm test --run
 
+# Run the treering conformance suite on its own, listing every case
+# (skips loudly unless treering is a sibling clone or TREERING_FIXTURES is set)
+conformance:
+    ./node_modules/.bin/vitest run tests/conformance --reporter=verbose
+
 # Run linter (Biome)
 lint:
     pnpm lint

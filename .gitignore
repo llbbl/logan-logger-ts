@@ -122,3 +122,6 @@ local/
 
 # Ignore TypeScript incremental compilation files
 *.tsbuildinfo.tmp
+
+# Treering conformance fixtures, checked out here by CI and optionally locally
+.treering/
