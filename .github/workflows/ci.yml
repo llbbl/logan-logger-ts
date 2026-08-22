@@ -143,8 +143,14 @@ jobs:
 
       - name: Test built artifacts
         run: |
-          node -e "const lib = require('./dist/index.js'); console.log('CJS build works:', typeof lib.createLogger === 'function')"
-          node -e "import('./dist/index.esm.js').then(lib => console.log('ESM build works:', typeof lib.createLogger === 'function'))"
+          node -e "const lib = require('./dist/index.cjs'); console.log('CJS build works:', typeof lib.createLogger === 'function')"
+          node -e "import('./dist/index.mjs').then(lib => console.log('ESM build works:', typeof lib.createLogger === 'function'))"
+
+      - name: Validate package metadata and types
+        run: pnpm lint:package
+
+      - name: Test packed package consumers
+        run: pnpm test:package
 
   security:
     name: Security Scan

@@ -59,6 +59,9 @@ const requestLogger = logger.child({
 requestLogger.info('Processing request', { endpoint: '/api/users' });
 ```
 
+Use named imports from `logan-logger` and its runtime subpaths. Default imports
+are not part of the public API.
+
 ### Next.js Integration
 
 Logan Logger is fully compatible with Next.js 13+ App Router, including Server Components, Client Components, and API Routes.
