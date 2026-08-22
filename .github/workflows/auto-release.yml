@@ -2,7 +2,11 @@ name: Auto Release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      # Maintenance lines: 1.x, 2.x, ... Releases cut from these publish under
+      # a channel dist-tag and never claim `latest` on npm.
+      - '*.x'
 
 permissions:
   contents: write
@@ -16,6 +20,8 @@ jobs:
     outputs:
       tag: ${{ steps.version.outputs.next }}
       version: ${{ steps.version.outputs.version }}
+      channel: ${{ steps.version.outputs.channel }}
+      is_default: ${{ steps.version.outputs.is_default }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,14 +44,45 @@ jobs:
       - name: Determine next version
         id: version
         run: |
-          # Use the highest semver tag in the repo, not `git describe`.
-          # `git describe` only sees tags reachable from HEAD, so a reverted
-          # release bump leaves it pointing at an older tag and we recompute a
-          # version that was already published. Filtering on vN.N.N also skips
-          # malformed tags left behind by failed runs.
-          latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
-          [ -z "$latest_tag" ] && latest_tag="v0.0.0"
+          branch="$GITHUB_REF_NAME"
+          default_branch="${{ github.event.repository.default_branch }}"
+
+          if [ "$branch" = "$default_branch" ]; then
+            # Use the highest semver tag in the repo, not `git describe`.
+            # `git describe` only sees tags reachable from HEAD, so a reverted
+            # release bump leaves it pointing at an older tag and we recompute a
+            # version that was already published. Filtering on vN.N.N also skips
+            # malformed tags left behind by failed runs.
+            latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+            [ -z "$latest_tag" ] && latest_tag="v0.0.0"
+            channel="latest"
+            is_default="true"
+          else
+            # A maintenance branch is named `<major>.x`. The repo-wide scan above
+            # is exactly wrong here: with v2.0.0 tagged, a 1.x hotfix would
+            # compute v2.0.1 and overwrite the 2.x line with 1.x code.
+            line="${branch%.x}"
+            case "$line" in
+              ''|*[!0-9]*)
+                echo "::error::Branch '$branch' is neither the default branch nor a <major>.x maintenance branch. Refusing to release." >&2
+                exit 1
+                ;;
+            esac
+
+            latest_tag=$(git tag --list "v${line}.[0-9]*.[0-9]*" --sort=-v:refname | head -n1)
+            if [ -z "$latest_tag" ]; then
+              echo "::error::No v${line}.*.* tag exists. Refusing to guess a starting version for maintenance branch '$branch'." >&2
+              exit 1
+            fi
+
+            channel="v${line}-lts"
+            is_default="false"
+          fi
+
           echo "latest=$latest_tag" >> "$GITHUB_OUTPUT"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "is_default=$is_default" >> "$GITHUB_OUTPUT"
+          echo "Branch '$branch' -> channel '$channel', starting from $latest_tag"
 
           version="${latest_tag#v}"
           IFS='.' read -r major minor patch <<< "$version"
@@ -57,6 +94,14 @@ jobs:
           # Any conventional-commit type may carry `!`, not just feat/fix/refactor.
           # A `chore!:` used to fall through to a patch bump.
           if echo "$commits" | grep -qE "^[a-zA-Z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:"; then
+            if [ "$is_default" != "true" ]; then
+              # A major bump on a maintenance branch would jump 1.x straight to
+              # 2.0.0 and collide with the live major. If the change really is
+              # breaking it does not belong on this branch; if it is not, drop
+              # the `!` and the BREAKING CHANGE footer.
+              echo "::error::A breaking-change marker was found on maintenance branch '$branch'. Maintenance releases must not bump the major." >&2
+              exit 1
+            fi
             major=$((major + 1))
             minor=0
             patch=0
@@ -109,7 +154,10 @@ jobs:
           git add -A
           git commit -m "chore(release): bump version to v$VERSION"
           git tag -a "$TAG" -m "Release $TAG"
-          git push origin main --follow-tags
+          # Push back to the branch that triggered this run. Hardcoding `main`
+          # fails outright on a maintenance branch, because actions/checkout
+          # never creates a local `main` there.
+          git push origin "HEAD:$GITHUB_REF_NAME" --follow-tags
 
   publish:
     name: Publish Package
@@ -147,11 +195,29 @@ jobs:
       - name: Install latest npm
         run: npm install -g npm@latest
 
-      # Publish to npm with OIDC provenance
+      # Publish to npm with OIDC provenance.
+      # --tag is explicit: without it every publish claims `latest`, so a 1.x
+      # hotfix released after 2.0.0 would silently make the old major the
+      # default install for everyone.
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag "$NPM_CHANNEL"
+        env:
+          NPM_CHANNEL: ${{ needs.version.outputs.channel }}
 
-      # Publish to JSR
+      # Publish to JSR.
+      # JSR has no dist-tag equivalent and needs none. It computes "latest" as
+      # max(semver) over non-prerelease, non-yanked versions -- publication
+      # timestamp has zero influence -- so a 1.x patch released after 2.0.0
+      # leaves latest at 2.0.0. Range specifiers (jsr:@logan/logger@^1.1.0)
+      # resolve to the highest version satisfying the range, so 1.x consumers
+      # pick up maintenance patches with no channel mechanism at all.
+      #
+      # Confirmed three ways: jsr-io/jsr's own query in
+      # api/src/db/sql_fragments.rs ("version NOT LIKE '%-%' AND is_yanked =
+      # false ORDER BY version DESC LIMIT 1"); jsr-io/jsr#1112, which records
+      # the rationale for not adopting dist-tags; and empirically against
+      # @hono/hono, which reports 4.13.3 as latest while holding twelve 4.9.x
+      # versions -- proving the ordering is semver-aware, not lexicographic.
       - name: Publish to JSR
         run: pnpx jsr publish
 
@@ -174,3 +240,6 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          # A maintenance release must not displace the current major as the
+          # repository's "Latest" release.
+          make_latest: ${{ needs.version.outputs.is_default }}
