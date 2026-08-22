@@ -3,45 +3,94 @@
   "version": "1.1.19",
   "packageManager": "pnpm@11.9.0",
   "description": "Universal TypeScript logging library for all JavaScript runtimes",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "node": [
+        "dist/node.d.ts"
+      ],
+      "deno": [
+        "dist/deno.d.ts"
+      ],
+      "bun": [
+        "dist/bun.d.ts"
+      ],
+      "browser": [
+        "dist/browser.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": "./dist/index.mjs"
     },
     "./node": {
-      "types": "./dist/node.d.ts",
-      "import": "./dist/node.esm.js",
-      "require": "./dist/node.js"
+      "import": {
+        "types": "./dist/node.d.mts",
+        "default": "./dist/node.mjs"
+      },
+      "require": {
+        "types": "./dist/node.d.cts",
+        "default": "./dist/node.cjs"
+      },
+      "default": "./dist/node.mjs"
     },
     "./deno": {
-      "types": "./dist/deno.d.ts",
-      "import": "./dist/deno.esm.js",
-      "require": "./dist/deno.js"
+      "import": {
+        "types": "./dist/deno.d.mts",
+        "default": "./dist/deno.mjs"
+      },
+      "require": {
+        "types": "./dist/deno.d.cts",
+        "default": "./dist/deno.cjs"
+      },
+      "default": "./dist/deno.mjs"
     },
     "./bun": {
-      "types": "./dist/bun.d.ts",
-      "import": "./dist/bun.esm.js",
-      "require": "./dist/bun.js"
+      "import": {
+        "types": "./dist/bun.d.mts",
+        "default": "./dist/bun.mjs"
+      },
+      "require": {
+        "types": "./dist/bun.d.cts",
+        "default": "./dist/bun.cjs"
+      },
+      "default": "./dist/bun.mjs"
     },
     "./browser": {
-      "types": "./dist/browser.d.ts",
-      "import": "./dist/browser.esm.js",
-      "require": "./dist/browser.js"
+      "import": {
+        "types": "./dist/browser.d.mts",
+        "default": "./dist/browser.mjs"
+      },
+      "require": {
+        "types": "./dist/browser.d.cts",
+        "default": "./dist/browser.cjs"
+      },
+      "default": "./dist/browser.mjs"
     }
   },
   "scripts": {
-    "build": "pnpm build:clean && pnpm build:lib",
+    "build": "pnpm build:clean && pnpm build:lib && pnpm build:types",
     "build:clean": "rm -rf dist",
     "build:lib": "vite build",
+    "build:types": "node ./scripts/prepare-package-types.mjs",
     "dev": "bun run src/index.ts",
     "test": "vitest run --reporter=default",
+    "test:package": "node ./scripts/verify-package-consumers.mjs",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "lint:package": "node ./scripts/validate-package.mjs",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
     "format": "biome format --write src",
@@ -61,9 +110,11 @@
   "author": "Logan Lindquist Land",
   "license": "MIT",
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "^2.4.7",
     "@types/node": "^25.5.0",
     "@vitest/ui": "^4.1.0",
+    "publint": "^0.3.15",
     "typescript": "^5.9.3",
     "vite": "^8.2.2",
     "vite-plugin-dts": "^4.5.4",

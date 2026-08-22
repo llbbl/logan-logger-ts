@@ -38,18 +38,30 @@ export default defineConfig({
         browser: resolve(__dirname, 'src/browser.ts'),
       },
       name: 'LoganLogger',
-      formats: ['es', 'cjs'],
-      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'esm.js' : 'js'}`,
     },
     rollupOptions: {
       // External dependencies that shouldn't be bundled
       external: ['winston'],
-      output: {
-        exports: 'named',
-        globals: {
-          winston: 'winston',
+      output: [
+        {
+          format: 'es',
+          exports: 'named',
+          entryFileNames: '[name].mjs',
+          chunkFileNames: 'chunks/[name]-[hash].mjs',
+          globals: {
+            winston: 'winston',
+          },
         },
-      },
+        {
+          format: 'cjs',
+          exports: 'named',
+          entryFileNames: '[name].cjs',
+          chunkFileNames: 'chunks/[name]-[hash].cjs',
+          globals: {
+            winston: 'winston',
+          },
+        },
+      ],
     },
     target: 'es2020',
     sourcemap: false,
