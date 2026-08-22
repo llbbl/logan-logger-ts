@@ -295,7 +295,9 @@ describe('Integration Tests', () => {
         ssn: '123-45-6789',
       };
 
-      // Filter sensitive data before logging
+      // Multi-token keys such as `apiKey` and `creditCard` must work: keys are
+      // tokenized by the same rule as field names. An implementation that
+      // compares a key raw against field tokens redacts neither, silently.
       const filteredData = filterSensitiveData(sensitiveData, [
         'password',
         'apiKey',
@@ -314,6 +316,20 @@ describe('Integration Tests', () => {
       expect(logCall).not.toContain('secret123');
       expect(logCall).not.toContain('api_key_12345');
       expect(logCall).not.toContain('4111-1111-1111-1111');
+    });
+
+    it('should never redact unless the caller asks', () => {
+      // Redaction is an explicit utility, not a logger behavior. Silently
+      // altering logged data is worse than the exposure it would prevent when
+      // the caller did not ask for it.
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      createLogger().info('login', { password: 'hunter2' });
+
+      const logCall = consoleSpy.mock.calls[0][0];
+
+      expect(logCall).toContain('hunter2');
+      expect(logCall).not.toContain('[REDACTED]');
     });
 
     it('should handle potentially malicious input safely', () => {
