@@ -135,7 +135,11 @@ export function loadConfigFromEnvironment(): Partial<LoggerConfig> {
 
   const env = process.env;
 
-  if (env.LOG_LEVEL) {
+  // Presence, not truthiness. An empty string is set, matches no accepted value,
+  // and so takes the unrecognized path including its diagnostic (SPEC 6.3). A
+  // truthy guard skips it silently: the resulting value stays accidentally right
+  // while the required warning disappears.
+  if (env.LOG_LEVEL !== undefined) {
     const level = tryParseLogLevel(env.LOG_LEVEL);
 
     if (level === undefined) {
@@ -148,7 +152,7 @@ export function loadConfigFromEnvironment(): Partial<LoggerConfig> {
     }
   }
 
-  if (env.LOG_FORMAT) {
+  if (env.LOG_FORMAT !== undefined) {
     const format = env.LOG_FORMAT.trim().toLowerCase();
 
     if (format === 'json' || format === 'text') {
@@ -161,7 +165,7 @@ export function loadConfigFromEnvironment(): Partial<LoggerConfig> {
     }
   }
 
-  if (env.LOG_TIMESTAMP) {
+  if (env.LOG_TIMESTAMP !== undefined) {
     const timestamp = parseBooleanEnvironment('LOG_TIMESTAMP', env.LOG_TIMESTAMP);
 
     if (timestamp !== undefined) {
@@ -169,7 +173,7 @@ export function loadConfigFromEnvironment(): Partial<LoggerConfig> {
     }
   }
 
-  if (env.LOG_COLOR) {
+  if (env.LOG_COLOR !== undefined) {
     const colorize = parseBooleanEnvironment('LOG_COLOR', env.LOG_COLOR);
 
     if (colorize !== undefined) {
