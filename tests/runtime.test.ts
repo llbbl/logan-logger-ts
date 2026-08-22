@@ -1,10 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { detectRuntime, isBrowser, isBun, isDeno, isNode } from '../src/utils/runtime.ts';
 
 describe('Runtime Detection', () => {
   beforeEach(() => {
     // Reset global state
     vi.resetAllMocks();
+  });
+
+  afterEach(() => {
+    // These tests stub `process` itself to undefined. Left in place that is not
+    // a mock of anything — it is the real global gone, and whatever runs next
+    // (the test runner's own RPC included) reaches for a property of undefined.
+    vi.unstubAllGlobals();
   });
 
   describe('detectRuntime', () => {

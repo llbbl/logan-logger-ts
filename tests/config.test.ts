@@ -1,12 +1,11 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logLevelToString, stringToLogLevel } from '../src/core/factory.ts';
 import { type LoggerConfig, LogLevel } from '../src/core/types.ts';
+import { getDefaultConfig, loadConfigFromEnvironment, mergeConfigs } from '../src/utils/config.ts';
 import { loadConfigFromFile } from '../src/utils/config-file.ts';
-import {
-  getDefaultConfig,
-  loadConfigFromEnvironment,
-  mergeConfigs,
-} from '../src/utils/config.ts';
 
 describe('Configuration System', () => {
   beforeEach(() => {
@@ -316,9 +315,16 @@ describe('Configuration System', () => {
     });
 
     it('should search default config file paths', async () => {
-      // Test that the function attempts to load from default paths
-      const config = await loadConfigFromFile();
-      expect(config).toEqual({});
+      // Pointed at an empty directory rather than the repo root: "no config
+      // found" must be a property of the directory searched, not of whether
+      // this repo's own package.json happens to carry a `logan` key.
+      const empty = mkdtempSync(join(tmpdir(), 'logan-empty-'));
+
+      try {
+        expect(await loadConfigFromFile(undefined, { cwd: empty })).toEqual({});
+      } finally {
+        rmSync(empty, { recursive: true, force: true });
+      }
     });
   });
 });

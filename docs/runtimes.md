@@ -45,6 +45,15 @@ guarantees. File logging is opt-in and never implied by `NODE_ENV`.
 `NodeLogger` also exposes `getTransports()` and `close()`, the latter releasing
 every transport's resources.
 
+`loadConfigFromFile` is exported here too, so a Node application never needs to
+reach back into the main entry point for it:
+
+```ts
+import { createLogger, loadConfigFromFile } from 'logan-logger/node';
+
+const logger = createLogger(await loadConfigFromFile(undefined, { cwd: packageRoot }));
+```
+
 ## Browser
 
 ```ts

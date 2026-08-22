@@ -61,18 +61,4 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
   },
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['src/**/*.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.d.ts',
-      ],
-    },
-  },
 });
