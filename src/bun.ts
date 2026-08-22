@@ -6,6 +6,7 @@ export { createLogger, createLoggerForEnvironment } from './core/factory.ts';
 // Re-export core functionality optimized for Bun
 export type { ILogger, LoggerConfig, LogLevel } from './core/types.ts';
 export { NodeLogger } from './runtime/node.ts';
+export * from './utils/config-file.ts';
 export * from './utils/config.ts';
 export * from './utils/formatting.ts';
 // Bun-specific utilities

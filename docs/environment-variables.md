@@ -53,7 +53,7 @@ LOG_FORMAT=text
 **Controls whether timestamps are included in log output.**
 
 **Variable:** `LOG_TIMESTAMP`  
-**Values:** `true`, `false`  
+**Values:** `true`, `1`, `yes`, `on` / `false`, `0`, `no`, `off` (case-insensitive)  
 **Default:** `true`
 
 ```bash
@@ -69,7 +69,7 @@ LOG_TIMESTAMP=false
 **Controls whether colored output is used (when supported by runtime).**
 
 **Variable:** `LOG_COLOR`  
-**Values:** `true`, `false`  
+**Values:** `true`, `1`, `yes`, `on` / `false`, `0`, `no`, `off` (case-insensitive)  
 **Default:** Auto-detected based on runtime capabilities
 
 ```bash
@@ -168,14 +168,58 @@ env:
   LOG_COLOR: false
 ```
 
+## What actually takes effect on 1.x
+
+> **Read this before relying on any variable other than `LOG_LEVEL`.**
+
+Until 1.2.0 none of these variables did anything at all: `loadConfigFromEnvironment()`
+parsed them correctly but nothing ever called it. They are now wired into
+`createLogger()`. However, the 1.x formatter still does not read `format`,
+`timestamp` or `colorize` from the config, so:
+
+| Variable | On 1.x |
+|---|---|
+| `LOG_LEVEL` | **works** |
+| `LOG_FORMAT` | parsed and merged, but Node output is unaffected |
+| `LOG_TIMESTAMP` | parsed and merged, but Node output is unaffected |
+| `LOG_COLOR` | parsed and merged; affects the browser logger's CSS styling only |
+
+The three inert ones are [#60](https://github.com/llbbl/logan-logger-ts/issues/60),
+fixed in 2.0 and deliberately not backported — honoring them means rewriting
+`NodeLogger`'s output path, which is the 2.0 transport work and too large a
+change for a maintenance line. `tests/config-environment.test.ts` pins the
+limitation so it cannot be rediscovered by accident.
+
+**All four work on 2.0.** If you need `LOG_FORMAT` or `LOG_TIMESTAMP`, that is a
+reason to upgrade.
+
 ## Priority Order
 
-Environment variables are loaded in this priority order (highest to lowest):
+Highest to lowest:
 
-1. **Environment variables** (e.g., `LOG_LEVEL`)
+1. **Environment variables** (e.g. `LOG_LEVEL`)
 2. **Manual configuration** passed to `createLogger(config)`
 3. **Environment-based defaults** from `NODE_ENV`, `NEXT_PUBLIC_APP_ENV`, `ENVIRONMENT`
 4. **Library defaults**
+
+Environment variables sit at the top deliberately, so an operator can change
+logging on a running service without a deploy. A library that must pin its own
+logging regardless of the host application's environment opts out:
+
+```typescript
+const logger = createLogger({ level: LogLevel.WARN, ignoreEnvironment: true });
+```
+
+**Config files are not in this chain.** `loadConfigFromFile()` is exported and
+usable directly, but `createLogger()` is synchronous and cannot await it. See
+[#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+
+### Unrecognized values
+
+A variable that does not parse is **ignored with a warning**, falling through to
+the next source rather than resolving to a default. `LOG_LEVEL=verbose` does not
+silently become `info`, and `LOG_TIMESTAMP=maybe` does not silently turn
+timestamps off. Each distinct problem warns once per process.
 
 ## Runtime Considerations
 
