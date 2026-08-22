@@ -7,6 +7,18 @@ on:
       # Maintenance lines: 1.x, 2.x, ... Releases cut from these publish under
       # a channel dist-tag and never claim `latest` on npm.
       - '*.x'
+    paths-ignore:
+      # Neither path can reach a consumer: package.json#files ships dist,
+      # README.md and LICENSE, and deno.json#publish.include ships src,
+      # README.md and LICENSE. A change confined to workflows or to docs/
+      # therefore has nothing to publish, so it should not cut a version.
+      #
+      # This skips a run only when *every* changed file matches, so a PR
+      # touching source alongside docs still releases normally. README.md is
+      # deliberately absent from this list: it is in the published tarball, so
+      # a README-only change does need a release to update the npm page.
+      - '.github/**'
+      - 'docs/**'
 
 permissions:
   contents: write
