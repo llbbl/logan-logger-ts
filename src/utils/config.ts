@@ -1,5 +1,6 @@
 import { type LoggerConfig, LogLevel } from '../core/types.ts';
 import { detectRuntime } from './runtime.ts';
+import { resetWarnings, warnOnce } from './warn-once.ts';
 
 /**
  * Whether colored output is appropriate right now.
@@ -58,25 +59,11 @@ const TRUTHY = ['true', '1', 'yes', 'on'];
 const FALSY = ['false', '0', 'no', 'off'];
 
 /**
- * Messages already emitted, so a misconfigured variable warns once rather than
- * once per logger constructed.
- */
-const warned = new Set<string>();
-
-function warnOnce(message: string): void {
-  if (warned.has(message)) {
-    return;
-  }
-
-  warned.add(message);
-  console.warn(message);
-}
-
-/**
- * Reset the warn-once state. Exposed for tests; not part of the public contract.
+ * Reset the warn-once state, config file warnings included. Exposed for tests;
+ * not part of the public contract.
  */
 export function resetEnvironmentWarnings(): void {
-  warned.clear();
+  resetWarnings();
 }
 
 /**

@@ -32,9 +32,17 @@ Environment variables sit on top so an operator can change logging on a running
 service without a deploy. A library that must pin its own logging regardless of
 the host application's environment sets [`ignoreEnvironment`](#ignoreenvironment).
 
-**Config files are not in this chain.** `loadConfigFromFile()` is exported and
-usable directly, but `createLogger()` is synchronous and cannot await it — see
-[#58](https://github.com/llbbl/logan-logger-ts/issues/58).
+**Config files are applied explicitly, not automatically.** `createLogger()` is
+synchronous and `loadConfigFromFile()` is not, so file configuration cannot sit
+in the chain above on its own. Opt in by awaiting it:
+
+```typescript
+const logger = createLogger(await loadConfigFromFile());
+```
+
+Placed there it behaves as the lowest-priority source, since explicit config and
+the environment are both applied on top. See
+[Config files](#config-files) below.
 
 ---
 
@@ -222,6 +230,139 @@ bundlers only inline their own prefixed names by default. Map them explicitly
 (Vite's `define`, for instance) if you want them.
 
 Full detail in [environment-variables.md](./environment-variables.md).
+
+---
+
+## Config files
+
+`loadConfigFromFile()` searches the working directory, in order, and returns the
+first candidate that exists:
+
+| File | Read from |
+|---|---|
+| `logan.config.json` | the whole file |
+| `.loganrc` | the whole file, parsed as **JSON** |
+| `package.json` | the `logan` key |
+
+A `package.json` with no `logan` key counts as absent, so the search continues
+rather than stopping with an empty config.
+
+```typescript
+import { createLogger, loadConfigFromFile } from 'logan-logger';
+
+const logger = createLogger(await loadConfigFromFile());
+```
+
+Pass a path to load exactly one file and skip the search. **A missing file is
+then an error**, not a silent fallback — asking for a specific file that is not
+there is a caller mistake:
+
+```typescript
+await loadConfigFromFile('config/logging.json');   // throws if absent
+```
+
+A path ending in `package.json` still means the `logan` key inside it, whether
+it comes from the search or from an explicit argument.
+
+A `package.json` with no `logan` key is reported as exactly that rather than as
+a missing file, since the file itself is plainly there.
+
+> **Neither the search nor `configPath` should point at untrusted content.**
+> `configPath` names a file to read, and any config file — found by the search
+> just as much as named explicitly — can declare a `file` transport whose
+> `options.filename` is an absolute path, which the transport resolves and
+> creates the parent directory for on first write.
+>
+> The search reads `.loganrc` and `package.json#logan` from the working
+> directory, so a CLI or a CI job that calls it while sitting inside a
+> user-supplied repository is taking configuration from that repository. Pass an
+> explicit `cwd` you control, or skip file configuration entirely, in anything
+> that runs against someone else's checkout.
+
+### Which directory is searched
+
+The process working directory, unless you say otherwise:
+
+```typescript
+await loadConfigFromFile(undefined, { cwd: packageRoot });
+```
+
+`cwd` is also the base a relative `configPath` resolves against. Reach for it
+whenever the working directory is not the package root — a monorepo, a
+`pnpm -C` invocation, or a service started by pm2 or systemd — where the default
+search quietly finds nothing.
+
+An empty string falls back to the working directory rather than resolving to the
+filesystem root, so `{ cwd: process.env.APP_ROOT ?? '' }` degrades to the
+default instead of searching `/`.
+
+### Values are normalized
+
+A config file naturally writes `"level": "debug"` — a string, where the runtime
+expects a `LogLevel` ordinal. The loader converts it. Handing the raw JSON
+straight to the logger would make every `level >= this.level` comparison `NaN`
+and **silently discard every record**, so normalization is not optional:
+
+```json
+{ "level": "warn", "format": "json", "timestamp": false, "metadata": { "service": "api" } }
+```
+
+`level` accepts the same names as `LOG_LEVEL`, or a numeric ordinal. A field
+that is unrecognized, unknown, or of the wrong type is dropped with a warning
+naming the file and the field, rather than being passed through to fail later.
+`{"levl": "debug"}` warns about `levl`; it does not silently produce an empty
+config.
+
+`transports` is validated element by element. An entry that is not an object,
+has no `type` string, or carries a non-object `options` is dropped with a
+warning naming its index — `createTransports` reads `entry.type` outside the
+guard that keeps one bad transport from taking down the others, so an unchecked
+element throws out of `createLogger()`. If every element is rejected the field
+is dropped entirely and the console default applies; an explicitly empty
+`"transports": []` still means "no destinations".
+
+**`TransportConfig.level` is normalized too**, and this matters more than it
+looks. `entry.level < transport.level` against the string `"error"` is `NaN`,
+which is `false`, so an unnormalized per-transport level filters **nothing** —
+`{"type": "file", "level": "error"}` would write every debug line to the file
+that was configured to hold errors only, and say nothing about it.
+
+### Failure is loud
+
+A candidate that is present but malformed **warns naming the path and stops the
+search**. It does not fall through to the next candidate, because a broken
+config file is a mistake to surface rather than route around.
+
+Three failures are kept apart from each other, because they call for different
+behaviour:
+
+| What happened | Search | Explicit `configPath` |
+|---|---|---|
+| No such file | continues | throws |
+| Malformed JSON, or not an object | warns, stops | throws |
+| Path exists but is not a readable file (`EISDIR`, `ENOTDIR`, `ELOOP`) | warns, **continues** | throws |
+| No permission to read it (`EACCES`, Deno's sandbox) | warns, stops | warns, returns `{}` |
+
+A directory named `.loganrc` — a stray `mkdir -p`, or a container volume
+mounted at the config path — is not a broken config file; it is not a config
+file at all, so the search goes on to `package.json`.
+
+A permission failure is the environment's problem rather than the caller's, so
+it never throws: a Deno process without `--allow-read` gets defaults and one
+warning, not a dead startup. It is reported as a denial, not as an invalid
+config, so nobody goes looking for a syntax error that is not there.
+
+Every warning here is emitted **once per distinct message**, so calling
+`loadConfigFromFile()` per request does not repeat itself forever. Parse errors
+report the position but not the file's contents, which would otherwise put the
+first bytes of the file into your log stream.
+
+### No JavaScript config
+
+`logan.config.js` was advertised in 1.x and never actually reachable. It is
+gone. Supporting it meant dynamically importing and executing a file from the
+working directory during logger construction, and nothing in `LoggerConfig`
+needs to be computed — JSON covers the entire surface.
 
 ---
 

@@ -142,7 +142,7 @@ LOG_TIMESTAMP=true
 LOG_COLOR=false
 
 // Configuration file support
-// logan.config.json, logan.config.js
+// logan.config.json, .loganrc, package.json#logan
 ```
 
 ## Factory Pattern

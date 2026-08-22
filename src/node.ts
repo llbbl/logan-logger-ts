@@ -16,3 +16,8 @@ export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/ty
 // logging is available from this entry point and not from the main one.
 export { FileTransport, type FileTransportOptions } from './runtime/file-transport.ts';
 export { createMorganStream, NodeLogger } from './runtime/node.ts';
+// The config file loader. Reachable from the main, /bun and /deno entries too;
+// this entry point already carries node:fs for the file transport, so exposing
+// it here costs the bundle nothing and stops /node being the one runtime entry
+// that cannot read a config file.
+export * from './utils/config-file.ts';
