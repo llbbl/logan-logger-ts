@@ -19,6 +19,13 @@ import { type ConformanceCase, loadFixtures } from './fixtures.ts';
  *   reason rather than given a fabricated substitute.
  * - Frozen `timestamp` and `runtime` are injected rather than read from the
  *   environment (`src/core/internal.ts`).
+ * - `input.env`, `input.files` and `expect.diagnostics` are handled in
+ *   `ambient.ts`, which restores every variable and removes every temp
+ *   directory in a `finally` so a failing case cannot corrupt the next one.
+ *
+ * Cases carrying `env` must not run concurrently with each other. They do not:
+ * these are `it`, not `it.concurrent`, so vitest runs them in declaration order
+ * within this file, and every other test file gets its own worker.
  *
  * With treering not checked out the whole suite skips loudly, so a contributor
  * without it can still run `pnpm test`.
@@ -64,11 +71,11 @@ function register(suite: string, testCase: ConformanceCase): void {
     return;
   }
 
-  it(title, (context) => {
-    let comparisons: ReturnType<typeof executeCase>;
+  it(title, async (context) => {
+    let comparisons: Awaited<ReturnType<typeof executeCase>>;
 
     try {
-      comparisons = executeCase(testCase, suite);
+      comparisons = await executeCase(testCase, suite);
     } catch (error) {
       if (error instanceof UnsupportedTagError) {
         context.skip(`${error.message} — a substitute must not be fabricated`);

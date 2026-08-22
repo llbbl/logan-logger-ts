@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: llbbl/treering
-          ref: fixtures-v0.1.2
+          ref: fixtures-v0.1.3
           path: .treering
           persist-credentials: false
 
@@ -116,6 +116,35 @@ jobs:
       # silent pass. Fail before the suite gets the chance.
       - name: Confirm fixtures were checked out
         run: test -f .treering/fixtures/README.md
+
+      # The pin above is what makes this build reproducible. It is also what
+      # lets the fixture set move without anyone noticing: three PRs in a row
+      # went green against a tag that predated the fixtures they were meant to
+      # exercise, each caught by hand. Compare against treering's default
+      # branch and fail, so drift is a red build instead of a silent gap.
+      #
+      # Scoped to fixtures/ on purpose. SPEC prose changes constantly and must
+      # not force a tag bump; a fixture change means this build no longer knows
+      # whether it conforms, which is a different thing entirely.
+      - name: Fail if the pinned fixtures are behind treering
+        working-directory: .treering
+        env:
+          TREERING_DEFAULT_BRANCH: main
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin "$TREERING_DEFAULT_BRANCH"
+
+          if git diff --quiet HEAD FETCH_HEAD -- fixtures/; then
+            echo "Pinned fixtures match treering/$TREERING_DEFAULT_BRANCH."
+            exit 0
+          fi
+
+          newest=$(git ls-remote --tags --refs origin 'fixtures-*' \
+            | awk -F/ '{print $NF}' | sort -V | tail -n1)
+
+          echo "::error::fixtures/ has changed on treering/$TREERING_DEFAULT_BRANCH since the pinned tag. This build does not know whether it still conforms. Cut a fixtures tag if needed, then bump 'ref:' in the conformance job. Newest tag on the remote: ${newest:-none}."
+          git diff --stat HEAD FETCH_HEAD -- fixtures/
+          exit 1
 
       # Non-zero exit on any failing case, which fails the build.
       - name: Run conformance suite

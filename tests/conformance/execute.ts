@@ -2,7 +2,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { logLevelToString, stringToLogLevel } from '../../src/core/factory.ts';
 import { withLoggerInternals } from '../../src/core/internal.ts';
-import { getTransportFactory, registerTransport } from '../../src/core/transport.ts';
+import {
+  getTransportFactory,
+  registerTransport,
+  type TransportContext,
+} from '../../src/core/transport.ts';
 import type {
   ILogger,
   LogEntry,
@@ -14,10 +18,17 @@ import type {
 import { LogLevel } from '../../src/core/types.ts';
 // The /node entry point, not the individual modules: importing it is what
 // registers the 'file' transport, exactly as a consumer's import would.
-import { createLogger, NodeLogger } from '../../src/node.ts';
+import { createLogger, loadConfigFromFile, NodeLogger } from '../../src/node.ts';
+import { mergeConfigs } from '../../src/utils/config.ts';
 import type { FormatOptions } from '../../src/utils/formatting.ts';
 import { formatLogEntry } from '../../src/utils/formatting.ts';
 import { filterSensitiveData, safeStringify } from '../../src/utils/serialization.ts';
+import {
+  captureDiagnostics,
+  type EnvironmentRequest,
+  withEnvironment,
+  withFiles,
+} from './ambient.ts';
 import { Dsl } from './dsl.ts';
 import type { ConformanceCase } from './fixtures.ts';
 
@@ -27,6 +38,8 @@ const KNOWN_INPUT_KEYS = new Set([
   'children',
   'config',
   'emit',
+  'env',
+  'files',
   'format',
   'keys',
   'level',
@@ -34,6 +47,7 @@ const KNOWN_INPUT_KEYS = new Set([
   'metadata',
   'parse',
   'runtime',
+  'sources',
   'then_emit_from',
   'threshold',
   'timestamp',
@@ -44,6 +58,9 @@ const KNOWN_INPUT_KEYS = new Set([
 /** Every `expect` key the fixtures use. Same rule. */
 const KNOWN_EXPECT_KEYS = new Set([
   'calls',
+  'config',
+  'context',
+  'diagnostics',
   'emitted',
   'has_silent_emit_method',
   'json',
@@ -54,6 +71,8 @@ const KNOWN_EXPECT_KEYS = new Set([
   'raised',
   'text',
   'transport_instances',
+  'transports',
+  'writes',
 ]);
 
 /**
@@ -84,6 +103,17 @@ const UNPINNED_CLOCK = new Date('2000-01-01T00:00:00.000Z');
 
 const CAPTURE_TRANSPORT = 'treering-capture';
 
+/**
+ * The name `fixtures/README.md` reserves for proving §7.1.1: the set of
+ * transport type names is open, so a runner registers one of its own and the
+ * fixtures name it from configuration like a built-in.
+ *
+ * Registered through the same public `registerTransport` an application would
+ * use — a fixture that reached past that would prove nothing about the
+ * registry.
+ */
+const PROBE_TRANSPORT = 'fixture-registry-probe';
+
 interface Captured {
   entry: LogEntry;
   /** Presentation options the library derived from the logger config. */
@@ -113,6 +143,15 @@ registerTransport(CAPTURE_TRANSPORT, (config, context) => {
   };
 });
 
+// Records the presentation context it was constructed with, which is what
+// `transport_context` reads. Discards everything written to it: §7.1.1 and
+// §7.1.2 are about construction, not delivery.
+registerTransport(PROBE_TRANSPORT, (config, context) => {
+  (config.options?.record as TransportContext[] | undefined)?.push(context);
+
+  return { type: PROBE_TRANSPORT, level: config.level, write: (): void => undefined };
+});
+
 /** Name the capture transport in a `LoggerConfig`. */
 function captureTransportConfig(sink: Captured[]): TransportConfig {
   return { type: CAPTURE_TRANSPORT, options: { sink } };
@@ -120,13 +159,43 @@ function captureTransportConfig(sink: Captured[]): TransportConfig {
 
 /**
  * Execute one fixture case.
+ *
+ * Ambient state is layered outside the case body so every teardown runs in a
+ * `finally`, including when the body throws — `fixtures/README.md` requires
+ * that, because one leaked variable or temp directory silently corrupts every
+ * case after it.
  * @param testCase - The case to run
  * @param suite - Name of the suite it came from
  * @returns The comparisons the caller must assert
  */
-export function executeCase(testCase: ConformanceCase, suite: string): Comparison[] {
+export async function executeCase(testCase: ConformanceCase, suite: string): Promise<Comparison[]> {
   rejectUnknownKeys(testCase);
 
+  const files = testCase.input.files as Record<string, string> | undefined;
+  const environment = testCase.input.env as EnvironmentRequest | undefined;
+
+  const inDirectory = (): Promise<Comparison[]> =>
+    files
+      ? withFiles(files, (directory) => dispatch(testCase, suite, directory))
+      : dispatch(testCase, suite, undefined);
+
+  const withAmbientState = (): Promise<Comparison[]> =>
+    environment ? withEnvironment(environment, inDirectory) : inDirectory();
+
+  if (testCase.expect.diagnostics === undefined) {
+    return withAmbientState();
+  }
+
+  const { result, diagnostics } = await captureDiagnostics(withAmbientState);
+
+  return [...result, ...compareDiagnostics(testCase, diagnostics)];
+}
+
+async function dispatch(
+  testCase: ConformanceCase,
+  suite: string,
+  directory: string | undefined
+): Promise<Comparison[]> {
   const dsl = new Dsl();
   const input = testCase.input;
 
@@ -137,6 +206,14 @@ export function executeCase(testCase: ConformanceCase, suite: string): Compariso
       return compareSilentEmit(testCase);
     case 'resource_count':
       return compareResourceCount(testCase, dsl);
+    case 'effective_config':
+      return compareEffectiveConfig(testCase, await explicitConfig(testCase, directory));
+    case 'transport_list':
+      return compareTransportList(testCase, await explicitConfig(testCase, directory));
+    case 'transport_context':
+      return compareTransportContext(testCase, await explicitConfig(testCase, directory));
+    case 'transport_writes':
+      return compareTransportWrites(testCase, await explicitConfig(testCase, directory));
     default:
       break;
   }
@@ -192,6 +269,136 @@ function structural(
   return { what, actual: canonical(actual), expected: canonical(expected), expectKey };
 }
 
+// --- configuration layers ---------------------------------------------------
+
+/**
+ * Build the explicit-config tier from the case's `files`, `sources`, `config`,
+ * `transports` and `threshold`, lowest precedence first.
+ *
+ * The layers are combined with the library's own `mergeConfigs`, not with a
+ * merge written here: §6.2's rules — `metadata` shallow, `transports` wholesale
+ * — are the thing under test, and a runner that reimplements them is only
+ * testing its own arithmetic. A single layer is passed through untouched so a
+ * case that omits `transports` really does hand the implementation an absent
+ * one rather than a defaulted list.
+ * @param testCase - The case being run
+ * @param directory - Where `input.files` was written, when the case has any
+ * @returns The configuration to construct the logger with
+ */
+async function explicitConfig(
+  testCase: ConformanceCase,
+  directory: string | undefined
+): Promise<Partial<LoggerConfig>> {
+  const input = testCase.input;
+  const layers: Partial<LoggerConfig>[] = [];
+
+  if (directory !== undefined) {
+    // §6.2: file contents enter as explicit config, below whatever the caller
+    // passes alongside them — so this is the bottom layer, not a tier of its own.
+    layers.push(await loadConfigFromFile(undefined, { cwd: directory }));
+  }
+
+  for (const source of (input.sources ?? []) as Record<string, unknown>[]) {
+    layers.push(materializeLayer(source));
+  }
+
+  if (input.config !== undefined) {
+    layers.push(materializeLayer(input.config as Record<string, unknown>));
+  }
+
+  if (input.transports !== undefined) {
+    layers.push({ transports: materializeTransports(input.transports as unknown[]) });
+  }
+
+  if (input.threshold !== undefined) {
+    layers.push({ level: stringToLogLevel(String(input.threshold)) });
+  }
+
+  const combined =
+    layers.length === 0
+      ? {}
+      : layers.length === 1
+        ? (layers[0] as Partial<LoggerConfig>)
+        : mergeConfigs(...layers);
+
+  // A case that is not about the environment must not be decided by one: an
+  // operator's LOG_LEVEL would otherwise change the answer.
+  return input.env === undefined ? { ...combined, ignoreEnvironment: true } : combined;
+}
+
+/**
+ * Turn one fixture configuration object into a native one.
+ *
+ * Only `level` needs work, and only because JSON has no level type. This is
+ * not the §6.5 normalization rule in disguise — `config` and `sources` stand in
+ * for values a caller builds in code, where a statically typed implementation
+ * would reject a string outright. Everything §6.5 governs arrives through
+ * `input.files` instead, where the JSON reaches the loader verbatim.
+ */
+function materializeLayer(source: Record<string, unknown>): Partial<LoggerConfig> {
+  const layer = { ...source } as Partial<LoggerConfig> & { level?: unknown };
+
+  if (typeof layer.level === 'string') {
+    layer.level = stringToLogLevel(layer.level);
+  }
+
+  if (Array.isArray(source.transports)) {
+    layer.transports = materializeTransports(source.transports);
+  }
+
+  return layer as Partial<LoggerConfig>;
+}
+
+function materializeTransports(entries: unknown[]): TransportConfig[] {
+  return entries.map((raw) => {
+    const entry = { ...(raw as TransportConfig & { level?: unknown }) };
+
+    if (typeof entry.level === 'string') {
+      entry.level = stringToLogLevel(entry.level);
+    }
+
+    return entry as TransportConfig;
+  });
+}
+
+/**
+ * Point every configured `filename` at the temp directory.
+ *
+ * Nothing here writes, and `FileTransport` opens lazily, so no file is created
+ * either way — but a future change to that laziness should not start littering
+ * the repository root with `ordered.log`.
+ */
+function redirectFilenames(config: Partial<LoggerConfig>): Partial<LoggerConfig> {
+  if (!config.transports) {
+    return config;
+  }
+
+  return {
+    ...config,
+    transports: config.transports.map((entry) => ({
+      ...entry,
+      options: {
+        ...entry.options,
+        ...(entry.options?.filename
+          ? { filename: join(tmpdir(), 'treering-conformance', String(entry.options.filename)) }
+          : {}),
+      },
+    })),
+  };
+}
+
+/**
+ * The configuration the implementation actually resolved.
+ *
+ * Read off the constructed logger rather than recomputed here, so what is
+ * compared is the end of the real precedence chain. `config` is protected
+ * because it is not public API; a conformance runner observing it is the same
+ * bargain as the clock seam in `core/internal.ts`.
+ */
+function resolvedConfig(logger: ILogger): Partial<LoggerConfig> {
+  return (logger as unknown as { config: Partial<LoggerConfig> }).config;
+}
+
 // --- assert: ordinals -------------------------------------------------------
 
 function compareOrdinals(testCase: ConformanceCase): Comparison[] {
@@ -220,6 +427,168 @@ function compareSilentEmit(testCase: ConformanceCase): Comparison[] {
   ];
 }
 
+// --- assert: effective_config -----------------------------------------------
+
+/**
+ * SPEC §6.1–§6.5: what the configuration resolves to once defaults, explicit
+ * config, files and the environment have all had their say.
+ *
+ * `expect.config` is a projection — only the fields the case names are read, so
+ * one fixture pins one field. `level` is compared as its ordinal, which is what
+ * makes the §6.5 normalization failure visible: a level left as the string
+ * `"debug"` does not equal `0`.
+ */
+function compareEffectiveConfig(
+  testCase: ConformanceCase,
+  explicit: Partial<LoggerConfig>
+): Comparison[] {
+  const logger = createLogger(explicit);
+  const resolved = resolvedConfig(logger);
+  const expected = testCase.expect.config as Record<string, unknown>;
+  const actual: Record<string, unknown> = {};
+
+  for (const field of Object.keys(expected)) {
+    // getLevel() is the public reading of the threshold, and the one an
+    // application would be filtered by.
+    actual[field] = field === 'level' ? logger.getLevel() : resolved[field as keyof LoggerConfig];
+  }
+
+  return [structural('config', actual, expected)];
+}
+
+// --- assert: transport_list -------------------------------------------------
+
+/**
+ * SPEC §7.1 and §7.2: which transports got built, in order.
+ *
+ * Names only. What each one does is other sections' business; this is the
+ * selection step, where an unrecognized type is skipped and a failing one is
+ * isolated without taking its neighbours down.
+ */
+function compareTransportList(
+  testCase: ConformanceCase,
+  explicit: Partial<LoggerConfig>
+): Comparison[] {
+  const logger = createLogger(redirectFilenames(explicit)) as NodeLogger;
+  const types = logger.getTransports().map((transport) => transport.type);
+
+  return [structural('transports', types, testCase.expect.transports)];
+}
+
+// --- assert: transport_context ----------------------------------------------
+
+/**
+ * SPEC §7.1.2: a transport is handed the logger's `format`, `timestamp` and
+ * `colorize` when it is constructed.
+ *
+ * Observed through the reserved probe transport, which records the context it
+ * was given. A transport that cannot see these has to duplicate or hardcode
+ * them, and the two then drift.
+ */
+function compareTransportContext(
+  testCase: ConformanceCase,
+  explicit: Partial<LoggerConfig>
+): Comparison[] {
+  const seen: TransportContext[] = [];
+  const transports = (explicit.transports ?? []).map((entry) =>
+    entry.type === PROBE_TRANSPORT
+      ? { ...entry, options: { ...entry.options, record: seen } }
+      : entry
+  );
+
+  createLogger(redirectFilenames({ ...explicit, transports }));
+
+  if (seen.length === 0) {
+    throw new Error(`${testCase.id}: no '${PROBE_TRANSPORT}' transport was constructed`);
+  }
+
+  return [structural('context', seen[0], testCase.expect.context)];
+}
+
+// --- assert: transport_writes -----------------------------------------------
+
+/**
+ * SPEC §7.3: a record reaches a transport only if it passes both the logger
+ * threshold and the transport threshold.
+ *
+ * Each configured transport is swapped for a recording one keyed by its
+ * `options.name`. The declared `level` is carried across **exactly as
+ * configuration produced it**, string or ordinal — substituting the destination
+ * is what makes delivery observable, and leaving the level untouched is what
+ * keeps §6.5's normalization rule under test. A string level here is precisely
+ * the bug: `entry.level < "error"` is neither true nor false, so the transport
+ * filters nothing and receives every debug record.
+ */
+function compareTransportWrites(
+  testCase: ConformanceCase,
+  explicit: Partial<LoggerConfig>
+): Comparison[] {
+  const captures = new Map<string, Captured[]>();
+
+  const transports = (explicit.transports ?? []).map((entry) => {
+    const sink: Captured[] = [];
+    captures.set(String(entry.options?.name ?? entry.type), sink);
+
+    const replacement = captureTransportConfig(sink) as TransportConfig & { level?: unknown };
+
+    if (entry.level !== undefined) {
+      replacement.level = entry.level;
+    }
+
+    return replacement as TransportConfig;
+  });
+
+  const logger = createLogger({ ...explicit, transports });
+
+  for (const level of (testCase.input.emit ?? []) as string[]) {
+    logger.log(stringToLogLevel(level), `emit ${level}`);
+  }
+
+  const actual: Record<string, string[]> = {};
+
+  for (const [name, sink] of captures) {
+    actual[name] = sink.map((record) => logLevelToString(record.entry.level));
+  }
+
+  return [structural('writes', actual, testCase.expect.writes)];
+}
+
+// --- expect: diagnostics ----------------------------------------------------
+
+/**
+ * `fixtures/README.md`: diagnostics are matched as **substrings**, deliberately
+ * not exactly. Wording is where implementations legitimately differ — an
+ * absolute path, a language's own error text, a library prefix — and what the
+ * spec actually requires is that a diagnostic names the thing that was wrong.
+ *
+ * An empty list is the opposite assertion and is just as load-bearing: §6.3
+ * requires a clean parse to warn about nothing.
+ */
+function compareDiagnostics(testCase: ConformanceCase, emitted: string[]): Comparison[] {
+  const wanted = testCase.expect.diagnostics as string[];
+  const combined = emitted.join('\n');
+
+  if (wanted.length === 0) {
+    return [
+      {
+        what: 'diagnostics (silence required)',
+        expectKey: 'diagnostics',
+        expected: '',
+        actual: combined,
+      },
+    ];
+  }
+
+  return wanted.map((substring) => ({
+    what: `diagnostics mention '${substring}'`,
+    expectKey: 'diagnostics',
+    expected: 'mentioned',
+    actual: combined.includes(substring)
+      ? 'mentioned'
+      : `not mentioned; diagnostics were: ${combined || '(none emitted)'}`,
+  }));
+}
+
 // --- assert: resource_count -------------------------------------------------
 
 /**
@@ -237,15 +606,9 @@ function compareSilentEmit(testCase: ConformanceCase): Comparison[] {
  */
 function compareResourceCount(testCase: ConformanceCase, dsl: Dsl): Comparison[] {
   const configured = (testCase.input.transports ?? []) as TransportConfig[];
-  const transports: TransportConfig[] = configured.map((entry) => ({
-    ...entry,
-    options: {
-      ...entry.options,
-      ...(entry.options?.filename
-        ? { filename: join(tmpdir(), 'treering-conformance', String(entry.options.filename)) }
-        : {}),
-    },
-  }));
+  const { transports } = redirectFilenames({ transports: configured }) as {
+    transports: TransportConfig[];
+  };
 
   const original = getTransportFactory('file');
 
@@ -348,7 +711,7 @@ function compareEmission(testCase: ConformanceCase, dsl: Dsl): Comparison[] {
     // An operator's LOG_LEVEL must not decide whether a conformance case passes.
     ignoreEnvironment: true,
     transports: [captureTransportConfig(captured)],
-    ...((input.config ?? {}) as Partial<LoggerConfig>),
+    ...materializeLayer((input.config ?? {}) as Record<string, unknown>),
   };
 
   const root: ILogger = createLogger(
