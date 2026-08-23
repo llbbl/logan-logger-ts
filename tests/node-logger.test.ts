@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Transport, TransportContext } from '../src/core/transport.ts';
 import { registerTransport } from '../src/core/transport.ts';
 import {
@@ -23,9 +23,28 @@ function recordingTransport(): Transport & { entries: LogEntry[] } {
 }
 
 describe('Node.js Logger', () => {
+  let savedNoColor: string | undefined;
+
   beforeEach(() => {
+    // SPEC §6.4.1 puts `NO_COLOR` above every configuration source, and
+    // `createTransports` resolves it when it builds the transport context. The
+    // cases below that assert on a `colorize: true` context would otherwise
+    // fail against correct behavior in the shell of any developer who keeps the
+    // variable set. NO_COLOR's own behavior is covered in
+    // tests/config-environment.test.ts, not here.
+    savedNoColor = process.env.NO_COLOR;
+    delete process.env.NO_COLOR;
+
     vi.resetAllMocks();
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    if (savedNoColor === undefined) {
+      delete process.env.NO_COLOR;
+    } else {
+      process.env.NO_COLOR = savedNoColor;
+    }
   });
 
   describe('NodeLogger', () => {

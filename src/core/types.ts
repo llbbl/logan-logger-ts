@@ -75,6 +75,18 @@ export interface LoggerConfig {
    * operator can raise verbosity on a running service without a deploy. A
    * library that must pin its own logging regardless of the host application's
    * environment sets this instead.
+   *
+   * Those four variables and no others. `NO_COLOR` is unaffected: it is the end
+   * user's preference rather than the host application's setting, and it stays
+   * an override that nothing here can defeat. See SPEC §6.4.1.
+   *
+   * It does silence one diagnostic. The `NO_COLOR`/`LOG_COLOR=true`
+   * disagreement warning is emitted while reading the environment, which this
+   * flag skips, so with both variables set and this flag on, color is disabled
+   * and nothing is reported. Nothing is lost that the flag had not already
+   * discarded — `LOG_COLOR` was out of the running before `NO_COLOR` arrived,
+   * so the two never disagreed about anything that was going to be honored, and
+   * `LOG_COLOR="bogus"` goes equally unreported under this flag.
    */
   ignoreEnvironment?: boolean;
 }

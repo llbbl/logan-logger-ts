@@ -14,12 +14,33 @@ import { dirname, join } from 'node:path';
 import { resetEnvironmentWarnings } from '../../src/utils/config.ts';
 
 /**
- * The variables SPEC §6.3 defines.
+ * The variables a case must not inherit from the developer's own shell.
  *
- * A case that names none of them still needs them gone: an operator's
- * `LOG_LEVEL` must not decide whether `"diagnostics": []` holds.
+ * SPEC §6.3 defines the four `LOG_*` names. A case that names none of them
+ * still needs them gone: an operator's `LOG_LEVEL` must not decide whether
+ * `"diagnostics": []` holds.
+ *
+ * Two variables outside this library's namespace change a conformance result
+ * and so are listed here as well:
+ *
+ * `NO_COLOR` — SPEC §6.4.1 makes it an override that outranks every
+ * configuration source, so a developer who keeps it set in their shell — an
+ * increasingly common preference — would otherwise see every `colorize`
+ * assertion resolve to `false` and every disagreement case warn spuriously.
+ *
+ * `FORCE_COLOR` — §6.4.1's "What is not specified" leaves it unspecified, but
+ * this implementation consults it in `shouldColorize()`, which seeds the
+ * `colorize` default of every merged config. CI providers commonly set it, so
+ * leaving it ambient makes a case's result depend on the runner.
  */
-const SPEC_VARIABLES = ['LOG_LEVEL', 'LOG_FORMAT', 'LOG_TIMESTAMP', 'LOG_COLOR'];
+const SPEC_VARIABLES = [
+  'LOG_LEVEL',
+  'LOG_FORMAT',
+  'LOG_TIMESTAMP',
+  'LOG_COLOR',
+  'NO_COLOR',
+  'FORCE_COLOR',
+];
 
 /** `null` in a fixture means "ensure unset", which is not the empty string. */
 export type EnvironmentRequest = Record<string, string | null>;

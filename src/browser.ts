@@ -15,7 +15,7 @@ import { type ILogger, type LoggerConfig, LogLevel } from './core/types.ts';
 import { BrowserLogger } from './runtime/browser.ts';
 // utils/config.ts is free of Node specifiers by design; the file-loading half
 // lives in utils/config-file.ts and is deliberately not imported here.
-import { loadConfigFromEnvironment, mergeConfigs } from './utils/config.ts';
+import { applyNoColorOverride, loadConfigFromEnvironment, mergeConfigs } from './utils/config.ts';
 
 function getBrowserEnvironment(): string {
   // Check various environment variables
@@ -63,7 +63,7 @@ export function createLogger(config: Partial<LoggerConfig> = {}): ILogger {
   // inlined them at build time, in which case this is a no-op.
   const environment = config.ignoreEnvironment ? {} : loadConfigFromEnvironment();
 
-  return new BrowserLogger(mergeConfigs(config, environment));
+  return new BrowserLogger(applyNoColorOverride(mergeConfigs(config, environment)));
 }
 
 /**

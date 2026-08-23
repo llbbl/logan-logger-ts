@@ -143,11 +143,61 @@ registerTransport(CAPTURE_TRANSPORT, (config, context) => {
   };
 });
 
-// Records the presentation context it was constructed with, which is what
+/**
+ * What a transport will actually format with — the settings `transport_context`
+ * reports.
+ *
+ * SPEC §7.1.2 hands a transport the logger's presentation settings *and* lets
+ * the transport's own `options` take precedence over them. `options.format ??
+ * context.format` is literally what the built-in console factory computes, so
+ * the resolved value is the only one that describes observable behavior. The
+ * handed-in context alone does not.
+ *
+ * Reporting the handed-in context is not a smaller truth, it is a hole. Two
+ * fixtures pass against it no matter what the implementation does:
+ *
+ * - a case asserting a per-transport `options.format` **wins** over the logger's
+ *   format sees only the logger's format, so the preference rule is never
+ *   exercised;
+ * - a case asserting §6.4.1's veto **survives** a per-transport `colorize: true`
+ *   sees a context this implementation already cleared to `false` at the logger
+ *   level, so the option under test is never consulted. An implementation that
+ *   clamps only the context and then lets `options.colorize` win reports full
+ *   conformance while writing escape bytes into a redirected stream.
+ *
+ * That second one is the whole reason the portable suite exists: it is exactly
+ * the bug found in this implementation, and a second implementation in another
+ * language could ship it and be told it conformed.
+ *
+ * §6.4.1's carve-out needs no special case here. A conforming implementation
+ * clamps the entry's own `options.colorize` before the factory sees it, so the
+ * veto arrives *through* `options` and the ordinary preference rule below
+ * yields `false` on its own. An implementation that clamps only the context
+ * fails, which is the point.
+ * @param config - The transport's own configuration entry
+ * @param context - The logger-level presentation settings it was handed
+ * @returns The presentation settings the transport will actually use
+ */
+function effectivePresentation(
+  config: TransportConfig,
+  context: TransportContext
+): TransportContext {
+  const options = config.options ?? {};
+
+  return {
+    format: (options.format as TransportContext['format'] | undefined) ?? context.format,
+    timestamp: (options.timestamp as boolean | undefined) ?? context.timestamp,
+    colorize: (options.colorize as boolean | undefined) ?? context.colorize,
+  };
+}
+
+// Records the presentation settings it resolves, which is what
 // `transport_context` reads. Discards everything written to it: §7.1.1 and
 // §7.1.2 are about construction, not delivery.
 registerTransport(PROBE_TRANSPORT, (config, context) => {
-  (config.options?.record as TransportContext[] | undefined)?.push(context);
+  (config.options?.record as TransportContext[] | undefined)?.push(
+    effectivePresentation(config, context)
+  );
 
   return { type: PROBE_TRANSPORT, level: config.level, write: (): void => undefined };
 });
@@ -179,8 +229,17 @@ export async function executeCase(testCase: ConformanceCase, suite: string): Pro
       ? withFiles(files, (directory) => dispatch(testCase, suite, directory))
       : dispatch(testCase, suite, undefined);
 
+  // Every case runs through `withEnvironment`, not only the ones carrying `env`.
+  //
+  // SPEC §6.4.1 makes `NO_COLOR` an override that no configuration source can
+  // defeat — `ignoreEnvironment` included — so a case that never mentions the
+  // environment is still decided by it. Cases with no `env` used to be safe
+  // because `explicitConfig` gives them `ignoreEnvironment: true`; that is no
+  // longer isolation, it is a config flag that happened to double as some.
+  // Isolating here makes it a property of the harness instead, which is what it
+  // always should have been.
   const withAmbientState = (): Promise<Comparison[]> =>
-    environment ? withEnvironment(environment, inDirectory) : inDirectory();
+    withEnvironment(environment ?? {}, inDirectory);
 
   if (testCase.expect.diagnostics === undefined) {
     return withAmbientState();
@@ -479,11 +538,15 @@ function compareTransportList(
 
 /**
  * SPEC §7.1.2: a transport is handed the logger's `format`, `timestamp` and
- * `colorize` when it is constructed.
+ * `colorize` when it is constructed, and its own `options` take precedence over
+ * them.
  *
- * Observed through the reserved probe transport, which records the context it
- * was given. A transport that cannot see these has to duplicate or hardcode
- * them, and the two then drift.
+ * What is reported is the transport's **effective** presentation settings —
+ * what it will actually format with, after its `options` are resolved over the
+ * logger context and including §6.4.1's veto carve-out. See
+ * `effectivePresentation` for why the handed-in context alone is not a testable
+ * answer. A transport that cannot see these has to duplicate or hardcode them,
+ * and the two then drift.
  */
 function compareTransportContext(
   testCase: ConformanceCase,

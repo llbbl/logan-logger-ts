@@ -1,6 +1,7 @@
 import { BrowserLogger } from '../runtime/browser.ts';
 import { NodeLogger } from '../runtime/node.ts';
 import {
+  applyNoColorOverride,
   loadConfigFromEnvironment,
   mergeConfigs,
   shouldColorize,
@@ -76,7 +77,7 @@ export class LoggerFactory {
 
     // mergeConfigs seeds itself with getDefaultConfig(), so defaults must not
     // be passed again here.
-    return mergeConfigs(userConfig, environment);
+    return applyNoColorOverride(mergeConfigs(userConfig, environment));
   }
 }
 
@@ -111,6 +112,22 @@ export function createLoggerForEnvironment(): ILogger {
 
   const config: Partial<LoggerConfig> = {
     level: getLogLevelForEnvironment(env),
+    // Calling `shouldColorize()` here promotes what it decides — including
+    // `FORCE_COLOR` — from the defaults tier into the explicit-config tier,
+    // which is a tier it is not entitled to. SPEC §6.4.1 requires a
+    // `FORCE_COLOR`-style gate to sit at or below the default, never above an
+    // explicit source.
+    //
+    // Harmless only because of what this function is: it takes no arguments and
+    // reads no config file, so there is no explicit config and no file for the
+    // promoted value to outrank. `LOG_COLOR` and `NO_COLOR` both still beat it.
+    //
+    // Give this function a config parameter or a config-file read and that stops
+    // being true the same day: a caller's explicit `colorize: false` would lose
+    // to an ambient `FORCE_COLOR=1`, and escape bytes would land in the caller's
+    // redirected log file. If you are adding either, move this call down to the
+    // defaults tier first — pass no `colorize` at all and let `mergeConfigs`
+    // seed it from `getDefaultConfig()`, which is where it belongs.
     colorize: env !== 'production' && shouldColorize(),
     timestamp: true,
     format: env === 'production' ? 'json' : 'text',

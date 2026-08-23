@@ -1,3 +1,4 @@
+import { noColorRequested } from '../utils/config.ts';
 import { type FormatOptions, formatLogEntry } from '../utils/formatting.ts';
 import { type LogEntry, type LoggerConfig, LogLevel, type TransportConfig } from './types.ts';
 
@@ -163,6 +164,19 @@ registerTransport('custom', (config, context) => {
 });
 
 /**
+ * Rewrite a transport entry's `colorize` request to `false`.
+ *
+ * Set rather than deleted. A factory reads `options.colorize ?? context.colorize`,
+ * so deleting the key would hand the decision back to the context — correct for
+ * the built-ins today, but silently wrong for any registered factory that
+ * defaults to color on its own. Entries that never mentioned `colorize` are
+ * rewritten too, for the same reason.
+ */
+function withColorDenied(entry: TransportConfig): TransportConfig {
+  return { ...entry, options: { ...entry.options, colorize: false } };
+}
+
+/**
  * Build the transports described by a logger configuration.
  *
  * Each transport is constructed behind its own guard so that one failing to
@@ -172,10 +186,26 @@ registerTransport('custom', (config, context) => {
  * @returns The transports that were built successfully
  */
 export function createTransports(config: Partial<LoggerConfig>): Transport[] {
+  // SPEC §6.4.1's NO_COLOR veto is read a second time here, and the duplication
+  // is deliberate. Two things make this the right layer rather than one more
+  // scattered environment read:
+  //
+  // 1. `applyNoColorOverride` rewrites the top-level `config.colorize` and
+  //    nothing else, so `{ type: 'console', options: { colorize: true } }` used
+  //    to re-enable color underneath it. Per-transport options are resolved
+  //    here and only here.
+  // 2. `createLogger()` and a directly constructed `new NodeLogger(...)` both
+  //    arrive here, and only the first passes through configuration
+  //    resolution. This is where the two paths meet.
+  //
+  // Reading `NO_COLOR` in a third place would be a cost worth refusing; reading
+  // it at the one join point that decides whether an escape byte is written is
+  // what makes the veto true rather than merely usually true.
+  const denyColor = noColorRequested();
   const context: TransportContext = {
     format: config.format ?? 'text',
     timestamp: config.timestamp ?? true,
-    colorize: config.colorize ?? false,
+    colorize: denyColor ? false : (config.colorize ?? false),
   };
 
   // No transports configured at all means console only. File logging is
@@ -201,7 +231,7 @@ export function createTransports(config: Partial<LoggerConfig>): Transport[] {
     }
 
     try {
-      transports.push(factory(entry, context));
+      transports.push(factory(denyColor ? withColorDenied(entry) : entry, context));
     } catch (error) {
       console.warn(`[logan-logger] transport '${entry.type}' failed to initialize:`, error);
     }
