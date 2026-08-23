@@ -142,9 +142,8 @@ runtime *can* colourize; the default additionally asks whether it *should*:
 
 1. runtime cannot colourize → `false`
 2. no `process` object, i.e. a browser → `true`; the console styles its own output and there is no stream to pollute
-3. `NO_COLOR` set to any non-empty value → `false`
-4. `FORCE_COLOR` set → `true` unless the value is exactly `"0"`
-5. otherwise → whether `process.stdout` is a TTY
+3. `FORCE_COLOR` set → `true` unless the value is exactly `"0"`
+4. otherwise → whether `process.stdout` is a TTY
 
 That gate matters more than the feature. Escape bytes written into a redirected
 file or a log shipper break grep patterns and render as literal `[32m` in most
@@ -154,7 +153,111 @@ production.
 Note the gate resolves the **default only**. An explicit `colorize: true` still
 wins over a non-TTY stdout.
 
-**Default** as resolved above. **Overridden by** `LOG_COLOR`.
+### `NO_COLOR` beats all of it
+
+`NO_COLOR` is deliberately absent from the list above, because it is not part of
+resolving the default. It is an override that outranks every configuration
+source — [SPEC §6.4.1](https://github.com/llbbl/treering/blob/main/SPEC.md):
+
+```
+library defaults  <  explicit config  <  environment variables  <<  NO_COLOR
+```
+
+Set it to any non-empty value and `colorize` resolves to `false`, whatever
+`LOG_COLOR`, your `createLogger()` call, or your config file asked for. That is
+what [no-color.org](https://no-color.org/) asks of programs, and it is the
+behaviour every user who sets the variable expects from every tool they run.
+
+- **The value means nothing.** `NO_COLOR=0` disables colour exactly as `NO_COLOR=1`
+  does. Presence is the whole signal.
+- **An empty value means unset.** `NO_COLOR=""` is ignored. This is the opposite of
+  the rule for `LOG_*` variables, where an empty value is *set* and warns — see
+  [Unrecognized values](./environment-variables.md#unrecognized-values). The two are
+  different on purpose: `LOG_*` is ours, `NO_COLOR` is not.
+- **`ignoreEnvironment` does not turn it off.** That flag opts out of `LOG_LEVEL`,
+  `LOG_FORMAT`, `LOG_TIMESTAMP` and `LOG_COLOR` — the host application's settings.
+  `NO_COLOR` is the end user's preference, and since `ignoreEnvironment` is settable
+  from a config file, honouring it there would let a file checked into a repository
+  defeat `NO_COLOR` for everyone using that project.
+
+Setting `NO_COLOR` together with `LOG_COLOR=true` asks for two opposite things.
+Colour is disabled and you get one diagnostic naming both variables. No
+diagnostic is emitted when only one is set, when they agree, or when `NO_COLOR`
+overrides a non-environment source.
+
+`ignoreEnvironment: true` also suppresses that diagnostic, which is worth knowing
+before you go looking for it. The warning is emitted while reading the
+environment, and the flag skips that step — so with `NO_COLOR` and
+`LOG_COLOR=true` both set and the flag on, colour is off and nothing is
+reported. Nothing is lost that the flag had not already discarded: `LOG_COLOR`
+was out of the running before `NO_COLOR` arrived. A malformed `LOG_COLOR=bogus`
+goes equally unreported under the flag, for the same reason.
+
+### What can and cannot defeat it
+
+No configuration source defeats `NO_COLOR`. Not `LOG_COLOR`, not an explicit
+`colorize: true`, not a `colorize` in a config file, not a per-transport
+`options: { colorize: true }`, and not `ignoreEnvironment`. The veto is resolved
+twice on purpose: once after the precedence chain is merged, and again when the
+transports are built, because a per-transport option is only visible at that
+second point.
+
+One thing does get past it, and it is not `NO_COLOR`-specific: **constructing a
+runtime adapter yourself bypasses configuration resolution entirely.**
+
+```ts
+import { BrowserLogger } from 'logan-logger/browser';
+
+new BrowserLogger({ colorize: true }); // colours even under NO_COLOR
+```
+
+That instance honours no environment variable and no config file — `LOG_LEVEL`
+and `LOG_COLOR` are as invisible to it as `NO_COLOR` is.
+
+`new NodeLogger(config)` is *not* an escape hatch: it builds its own transports,
+and those apply the veto. Handing it pre-built ones is:
+
+```ts
+import { NodeLogger, ConsoleTransport } from 'logan-logger/node';
+
+new NodeLogger({}, [new ConsoleTransport({ colorize: true })]); // colours under NO_COLOR
+```
+
+That second parameter exists so a child logger can share its parent's
+destinations, and passing it skips transport construction — and with it the
+second place the veto is applied. It is the same hand-assembly as above, one
+layer down: a caller who builds the objects themselves owns what they emit.
+
+The same hand-assembly reaches through `createLogger()` itself, in the one place
+configuration can carry an object you built — a `custom` transport supplied as an
+**instance**:
+
+```ts
+createLogger({ transports: [{ type: 'custom', options: { transport: myWriter } }] });
+// myWriter colours under NO_COLOR, if colouring is what myWriter does
+```
+
+`myWriter` is handed nothing and asked nothing, so nothing can reach it. Supply a
+**builder** instead and the veto does reach you, because a builder is called with
+the logger's resolved presentation settings:
+
+```ts
+createLogger({
+  transports: [
+    { type: 'custom', options: { transport: (context) => new MyWriter(context.colorize) } },
+  ],
+});
+// context.colorize is false under NO_COLOR
+```
+
+Prefer the builder form for exactly this reason. The two are not
+interchangeable: an instance opts out of *every* presentation setting the logger
+resolved — `format` and `timestamp` as much as `colorize` — and then drifts from
+them silently as configuration changes around it.
+
+Use `createLogger()` and let it build your transports, and none of this arises.
+
+**Default** as resolved above. **Overridden by** `LOG_COLOR`, then by `NO_COLOR`.
 
 ---
 

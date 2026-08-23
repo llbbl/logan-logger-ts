@@ -70,7 +70,7 @@ LOG_TIMESTAMP=false
 
 **Variable:** `LOG_COLOR`  
 **Values:** `true`, `1`, `yes`, `on` / `false`, `0`, `no`, `off` (case-insensitive)  
-**Default:** Colored only when stdout is a terminal. `NO_COLOR` and `FORCE_COLOR` are honored.
+**Default:** Colored only when stdout is a terminal. `FORCE_COLOR` is honored.
 
 ```bash
 # Force colored output
@@ -79,6 +79,39 @@ LOG_COLOR=true
 # Disable colored output (useful for log files)
 LOG_COLOR=false
 ```
+
+### `NO_COLOR`
+
+**Variable:** `NO_COLOR`  
+**Values:** any non-empty value disables color; the value itself is ignored  
+**Default:** unset
+
+`NO_COLOR` is not one of this library's variables — it is a
+[cross-tool convention](https://no-color.org/) by which a user tells *every*
+program in their session not to emit color. It is honored as an **override**, so
+it outranks everything in [Priority Order](#priority-order) below, including
+`LOG_COLOR` and an explicit `colorize: true`.
+
+```bash
+# Disables color regardless of what anything else asks for
+NO_COLOR=1
+
+# Also disables color: presence is the signal, the value means nothing
+NO_COLOR=0
+
+# Ignored: an empty value counts as unset, unlike the LOG_* variables
+NO_COLOR=
+```
+
+Set alongside `LOG_COLOR=true` it wins, and you get one diagnostic:
+
+```
+[logan-logger] NO_COLOR is set and LOG_COLOR=true asks for color. NO_COLOR takes precedence: defaulting to no color.
+```
+
+`ignoreEnvironment: true` does **not** turn it off, though it does suppress that
+diagnostic — see [configuration.md](./configuration.md#no_color-beats-all-of-it)
+for both.
 
 ## Environment-Based Configuration
 
@@ -172,10 +205,15 @@ env:
 
 Highest to lowest:
 
+0. **[`NO_COLOR`](#no_color)** — above the chain entirely, and only for `colorize`
 1. **Environment variables** (e.g. `LOG_LEVEL`)
 2. **Manual configuration** passed to `createLogger(config)`
 3. **Environment-based defaults** from `NODE_ENV`, `NEXT_PUBLIC_APP_ENV`, `ENVIRONMENT`
 4. **Library defaults**
+
+`NO_COLOR` is numbered zero because it is not a tier of this list — it is a veto
+that nothing below can outrank, not even `ignoreEnvironment`. Everything else
+here belongs to this library; `NO_COLOR` belongs to the user.
 
 Environment variables sit at the top deliberately, so an operator can change
 logging on a running service without a deploy. A library that must pin its own
