@@ -1,6 +1,6 @@
 {
   "name": "@logan/logger",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "exports": "./src/index.ts",
   "compilerOptions": {
     "lib": [
