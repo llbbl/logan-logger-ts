@@ -351,25 +351,15 @@ export function filterSensitiveData(
 const ERROR_CORE_PROPERTIES = ['name', 'message', 'stack'];
 
 /**
- * Read a single own property off an error without letting it break
- * serialization. Accessor properties run user code, which may throw.
+ * Read an error property without letting it break serialization. Core fields
+ * may be inherited, and accessor properties run user code, which may throw.
  */
 function readErrorProperty(error: Error, property: string): unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(error, property);
-
-  if (!descriptor) {
-    return undefined;
+  try {
+    return Reflect.get(error, property);
+  } catch {
+    return '[Throws]';
   }
-
-  if (descriptor.get) {
-    try {
-      return descriptor.get.call(error);
-    } catch {
-      return '[Throws]';
-    }
-  }
-
-  return descriptor.value;
 }
 
 /**
@@ -390,13 +380,14 @@ export function serializeError(error: any): any {
   }
 
   const serialized: Record<string, unknown> = {
-    name: error.name,
-    message: error.message,
+    name: readErrorProperty(error, 'name'),
+    message: readErrorProperty(error, 'message'),
   };
 
   // Omit `stack` entirely when unavailable rather than emitting null.
-  if (error.stack !== undefined) {
-    serialized.stack = error.stack;
+  const stack = readErrorProperty(error, 'stack');
+  if (stack !== undefined) {
+    serialized.stack = stack;
   }
 
   // All own properties, not just enumerable ones. `message` and `stack` are

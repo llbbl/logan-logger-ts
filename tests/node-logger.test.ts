@@ -48,6 +48,29 @@ describe('Node.js Logger', () => {
   });
 
   describe('NodeLogger', () => {
+    it('logs errors with hostile core getters without dropping the record', () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const error = new Error('hostile');
+      error.stack = 'STACK';
+      Object.defineProperty(error, 'message', {
+        get() {
+          throw new Error('message getter blew up');
+        },
+      });
+
+      try {
+        new NodeLogger({ format: 'json' }).error('operation failed', { error });
+
+        expect(consoleWarn).not.toHaveBeenCalled();
+        expect(consoleError).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(consoleError.mock.calls[0][0]).metadata.error.message).toBe('[Throws]');
+      } finally {
+        consoleError.mockRestore();
+        consoleWarn.mockRestore();
+      }
+    });
+
     it('should create a Node.js logger instance', () => {
       const logger = new NodeLogger();
 

@@ -6,8 +6,8 @@ surface that reflects what is actually available there.
 
 | Runtime | Import | Implementation | Notes |
 |---|---|---|---|
-| Auto-detect | `logan-logger` | picked at runtime | Safe in a browser bundle; no `node:` specifier |
-| Next.js 13+ | `logan-logger` | picked at runtime | Server and Client Components, API Routes, Edge |
+| Auto-detect | `logan-logger` | picked at runtime | Re-exports the config file loader; bundlers must resolve its lazy Node imports |
+| Next.js 13+ | `logan-logger` on the server; `logan-logger/browser` in Client Components | picked at runtime / `BrowserLogger` | Use the browser entry for client and Edge bundles |
 | Node.js 22.12+ | `logan-logger/node` | `NodeLogger` | File transport, Morgan integration |
 | Bun | `logan-logger/bun` | `NodeLogger` | Same as Node |
 | Browser | `logan-logger/browser` | `BrowserLogger` | CSS styling, performance marks, grouping |
@@ -92,17 +92,21 @@ Bun implements `node:fs`, so the file transport works exactly as it does on Node
 
 ---
 
-## Why the main entry stays browser-safe
+## Choosing a browser-safe entry
 
 `node:fs` is imported statically by the file transport, which is reachable only
 from `logan-logger/node` and `logan-logger/bun`. Those entry points are what
 register the `file` transport with the shared registry.
 
-The consequence is a genuinely universal main entry: `dist/browser.mjs` and the
-chunks reachable from `dist/index.mjs` contain **no `node:` specifier at all**,
-so bundling `logan-logger` for the browser cannot fail on an unresolvable
-built-in. That matters most for isomorphic frameworks, where the same import
-gets bundled for both sides.
+The main entry also re-exports `loadConfigFromFile`. That loader uses lazy
+imports of `node:path` and `node:fs/promises`, guarded by runtime filesystem
+capabilities. A bundler still has to resolve those imports, even when the
+browser will never execute them.
+
+Use `logan-logger/browser` in browser, client-component and Edge bundles. This
+entry does not re-export the file loader and reaches no Node builtin. The root
+entry remains useful for runtime detection in environments that can resolve
+the loader's Node imports.
 
 The trade-off is explicit: configure a `file` transport from the main entry and
 you get a warning naming the entry point to import instead, rather than silent
@@ -112,8 +116,8 @@ failure.
 
 ## Next.js
 
-Works in Server Components, Client Components, API Routes and the Edge runtime
-from the single `logan-logger` import.
+Use `logan-logger` in Server Components and API Routes, and
+`logan-logger/browser` in Client Components and the Edge runtime.
 
 ```ts
 // app/api/users/route.ts
@@ -132,8 +136,8 @@ Full setup, advanced patterns and troubleshooting:
 
 ## Bundlers
 
-Webpack, Vite, Rollup, esbuild and Parcel all work without configuration. If you
-are externalising anything, externalise `node:*` rather than naming packages —
-there are no dependencies to externalise.
+Choose `logan-logger/browser` when targeting the browser with Webpack, Vite,
+Rollup, esbuild or Parcel. For Node targets, keep Node builtins external so the
+runtime resolves them; there are no runtime package dependencies to externalise.
 [webpack-bundler-compatibility.md](./webpack-bundler-compatibility.md) has
 per-bundler configuration.
