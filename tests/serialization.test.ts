@@ -599,6 +599,54 @@ describe('Serialization Utilities', () => {
       expect(() => safeStringify({ err: error })).not.toThrow();
     });
 
+    it.each(['name', 'message', 'stack'])('guards an own %s getter that throws', (property) => {
+      const error = new Error('hostile');
+      // Materialize V8's lazy stack before installing a hostile name/message.
+      error.stack = 'STACK';
+      Object.defineProperty(error, property, {
+        get() {
+          throw new Error('getter blew up');
+        },
+        configurable: true,
+      });
+
+      expect(serializeError(error)[property]).toBe('[Throws]');
+      expect(JSON.parse(safeStringify({ error })).error[property]).toBe('[Throws]');
+    });
+
+    it.each(['name', 'message', 'stack'])('guards an inherited %s getter that throws', (property) => {
+      const error = new Error('hostile');
+      error.stack = 'STACK';
+      const prototype = Object.create(Error.prototype);
+      Object.defineProperty(prototype, property, {
+        get() {
+          throw new Error('inherited getter blew up');
+        },
+      });
+      Object.setPrototypeOf(error, prototype);
+      Reflect.deleteProperty(error, property);
+
+      expect(serializeError(error)[property]).toBe('[Throws]');
+      expect(JSON.parse(safeStringify(error))[property]).toBe('[Throws]');
+    });
+
+    it('reads each core getter only once per serialization', () => {
+      const error = new Error('read once');
+      error.stack = 'STACK';
+      const reads = { name: 0, message: 0, stack: 0 };
+      for (const property of ['name', 'message', 'stack'] as const) {
+        Object.defineProperty(error, property, {
+          get() {
+            reads[property]++;
+            return property.toUpperCase();
+          },
+        });
+      }
+
+      expect(serializeError(error)).toEqual({ name: 'NAME', message: 'MESSAGE', stack: 'STACK' });
+      expect(reads).toEqual({ name: 1, message: 1, stack: 1 });
+    });
+
     it('should include an ES2022 cause', () => {
       const cause = new Error('underlying');
       const error = new Error('wrapper', { cause });

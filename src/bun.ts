@@ -13,7 +13,7 @@ export {
 } from './core/transport.ts';
 
 // Re-export core functionality optimized for Bun
-export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/types.ts';
+export { type ILogger, type LoggerConfig, LogLevel, type TransportConfig } from './core/types.ts';
 // Registers the 'file' transport for Bun, which implements node:fs.
 export { FileTransport, type FileTransportOptions } from './runtime/file-transport.ts';
 export { NodeLogger } from './runtime/node.ts';

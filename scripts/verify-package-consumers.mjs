@@ -43,17 +43,20 @@ async function verifyNodeConsumers() {
     directory,
     'esm.mjs',
     `
-import { createLogger, logger } from 'logan-logger';
-import { createMorganStream } from 'logan-logger/node';
-import { createLogger as createDenoLogger } from 'logan-logger/deno';
-import { createLogger as createBunLogger } from 'logan-logger/bun';
-import { BrowserLogger } from 'logan-logger/browser';
+import { createLogger, logger, LogLevel } from 'logan-logger';
+import { createMorganStream, LogLevel as NodeLogLevel } from 'logan-logger/node';
+import { createLogger as createDenoLogger, LogLevel as DenoLogLevel } from 'logan-logger/deno';
+import { createLogger as createBunLogger, LogLevel as BunLogLevel } from 'logan-logger/bun';
+import { BrowserLogger, LogLevel as BrowserLogLevel } from 'logan-logger/browser';
 
 if (typeof createLogger !== 'function' || typeof logger.info !== 'function') throw new Error('root ESM exports failed');
 if (typeof createMorganStream !== 'function') throw new Error('node ESM exports failed');
 if (typeof createDenoLogger !== 'function') throw new Error('deno ESM exports failed');
 if (typeof createBunLogger !== 'function') throw new Error('bun ESM exports failed');
 if (typeof BrowserLogger !== 'function') throw new Error('browser ESM exports failed');
+for (const level of [LogLevel, NodeLogLevel, DenoLogLevel, BunLogLevel, BrowserLogLevel]) {
+  if (level.INFO !== 1 || level[level.INFO] !== 'INFO') throw new Error('ESM LogLevel enum export failed');
+}
 `
   );
 
@@ -72,6 +75,9 @@ if (typeof node.createMorganStream !== 'function') throw new Error('node CJS exp
 if (typeof deno.createLogger !== 'function') throw new Error('deno CJS exports failed');
 if (typeof bun.createLogger !== 'function') throw new Error('bun CJS exports failed');
 if (typeof browser.BrowserLogger !== 'function') throw new Error('browser CJS exports failed');
+for (const entry of [root, node, deno, bun, browser]) {
+  if (entry.LogLevel.INFO !== 1 || entry.LogLevel[entry.LogLevel.INFO] !== 'INFO') throw new Error('CJS LogLevel enum export failed');
+}
 `
   );
 

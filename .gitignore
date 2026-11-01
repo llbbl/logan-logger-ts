@@ -125,3 +125,4 @@ local/
 
 # Treering conformance fixtures, checked out here by CI and optionally locally
 .treering/
+.agentwiki/

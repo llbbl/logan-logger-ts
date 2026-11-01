@@ -13,7 +13,7 @@ export {
   type TransportContext,
   type TransportFactory,
 } from './core/transport.ts';
-export type { ILogger, LoggerConfig, LogLevel, TransportConfig } from './core/types.ts';
+export { type ILogger, type LoggerConfig, LogLevel, type TransportConfig } from './core/types.ts';
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
 export * from './utils/config-file.ts';
 export * from './utils/config.ts';

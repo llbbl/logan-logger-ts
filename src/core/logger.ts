@@ -94,6 +94,7 @@ export abstract class BaseLogger implements ILogger {
   // biome-ignore lint/suspicious/noExplicitAny: Intentional - logger accepts arbitrary metadata (see ILogger interface)
   child(metadata: Record<string, any>): ILogger {
     const childLogger = this.createChild();
+    childLogger.setLevel(this.level);
     childLogger.childMetadata = { ...this.childMetadata, ...metadata };
     return childLogger;
   }
