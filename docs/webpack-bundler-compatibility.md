@@ -436,14 +436,13 @@ export default defineConfig({
 
 ### tsconfig.json
 
-Ensure proper TypeScript configuration:
+Use a resolution mode that reads `package.json#exports`: `bundler` for bundled apps, or set both `module` and `moduleResolution` to `nodenext` for code that runs in Node without a bundler. The older `"node"` (node10) mode is deprecated in TypeScript 6 and removed in TypeScript 7.
 
 ```json
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "skipLibCheck": true
   }
 }
@@ -454,7 +453,8 @@ Ensure proper TypeScript configuration:
 Logan Logger provides full TypeScript support:
 
 ```typescript
-import type { ILogger, LoggerConfig, LogLevel } from 'logan-logger';
+import { LogLevel } from 'logan-logger';
+import type { ILogger, LoggerConfig } from 'logan-logger';
 
 const config: LoggerConfig = {
   level: LogLevel.INFO,
