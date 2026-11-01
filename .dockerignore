@@ -6,6 +6,7 @@
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !tsconfig.json
+!tsconfig.build.json
 !vite.config.ts
 !LICENSE
 !README.md

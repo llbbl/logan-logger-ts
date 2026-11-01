@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import dts from 'vite-plugin-dts';
 
 export default defineConfig({
   resolve: {
@@ -12,21 +11,6 @@ export default defineConfig({
       '@/formatters': resolve(__dirname, './src/formatters'),
     },
   },
-  plugins: [
-    dts({
-      insertTypesEntry: true,
-      bundleTypes: false,
-      copyDtsFiles: true,
-      beforeWriteFile: (filePath, content) => {
-        // Remove .ts extensions from imports in declaration files for webpack compatibility
-        const cleanContent = content.replace(/from ['"](.+?)\.ts['"]/g, "from '$1'");
-        return {
-          filePath,
-          content: cleanContent
-        };
-      },
-    }),
-  ],
   build: {
     lib: {
       entry: {

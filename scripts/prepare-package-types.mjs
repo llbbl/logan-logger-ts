@@ -34,17 +34,22 @@ function rewriteRelativeSpecifiers(content, runtimeExtension) {
   );
 }
 
-async function writeDeclarationVariant(filePath, declarationExtension, runtimeExtension) {
-  const content = await readFile(filePath, 'utf8');
-  const targetPath = filePath.replace(/\.d\.ts$/, declarationExtension);
-  await writeFile(targetPath, rewriteRelativeSpecifiers(content, runtimeExtension));
+// tsc keeps src/'s `.ts` specifiers: TS < 5.0 consumers reject them, and the
+// .d.mts/.d.cts variants would get './x.ts.mjs'. rewriteRelativeImportExtensions
+// does not apply to declarations.
+function stripTsExtensions(content) {
+  return content.replace(/from ['"](.+?)\.ts['"]/g, "from '$1'");
+}
+
+async function prepareDeclaration(filePath) {
+  const content = stripTsExtensions(await readFile(filePath, 'utf8'));
+  await Promise.all([
+    writeFile(filePath, content),
+    writeFile(filePath.replace(/\.d\.ts$/, '.d.mts'), rewriteRelativeSpecifiers(content, '.mjs')),
+    writeFile(filePath.replace(/\.d\.ts$/, '.d.cts'), rewriteRelativeSpecifiers(content, '.cjs')),
+  ]);
 }
 
 const declarationFiles = (await walk(distDir)).filter((filePath) => filePath.endsWith('.d.ts'));
 
-await Promise.all(
-  declarationFiles.flatMap((filePath) => [
-    writeDeclarationVariant(filePath, '.d.mts', '.mjs'),
-    writeDeclarationVariant(filePath, '.d.cts', '.cjs'),
-  ])
-);
+await Promise.all(declarationFiles.map(prepareDeclaration));
