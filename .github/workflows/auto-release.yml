@@ -1,6 +1,12 @@
 name: Auto Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Confirm the exact next major version (for example, 3.0.0)'
+        required: true
+        type: string
   push:
     branches:
       - main
@@ -20,6 +26,12 @@ on:
       - '.github/**'
       - 'docs/**'
 
+# Serialize versioning and publication together so a slower older run cannot
+# reclaim npm's latest tag after a newer release on the same branch.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   id-token: write # Required for npm OIDC and JSR publishing
@@ -28,12 +40,13 @@ jobs:
   version:
     name: Determine Version
     runs-on: ubuntu-latest
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(release):')
     outputs:
       tag: ${{ steps.version.outputs.next }}
       version: ${{ steps.version.outputs.version }}
       channel: ${{ steps.version.outputs.channel }}
       is_default: ${{ steps.version.outputs.is_default }}
+      source_sha: ${{ steps.version.outputs.source_sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -55,84 +68,7 @@ jobs:
 
       - name: Determine next version
         id: version
-        run: |
-          branch="$GITHUB_REF_NAME"
-          default_branch="${{ github.event.repository.default_branch }}"
-
-          if [ "$branch" = "$default_branch" ]; then
-            # Use the highest semver tag in the repo, not `git describe`.
-            # `git describe` only sees tags reachable from HEAD, so a reverted
-            # release bump leaves it pointing at an older tag and we recompute a
-            # version that was already published. Filtering on vN.N.N also skips
-            # malformed tags left behind by failed runs.
-            latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
-            [ -z "$latest_tag" ] && latest_tag="v0.0.0"
-            channel="latest"
-            is_default="true"
-          else
-            # A maintenance branch is named `<major>.x`. The repo-wide scan above
-            # is exactly wrong here: with v2.0.0 tagged, a 1.x hotfix would
-            # compute v2.0.1 and overwrite the 2.x line with 1.x code.
-            line="${branch%.x}"
-            case "$line" in
-              ''|*[!0-9]*)
-                echo "::error::Branch '$branch' is neither the default branch nor a <major>.x maintenance branch. Refusing to release." >&2
-                exit 1
-                ;;
-            esac
-
-            latest_tag=$(git tag --list "v${line}.[0-9]*.[0-9]*" --sort=-v:refname | head -n1)
-            if [ -z "$latest_tag" ]; then
-              echo "::error::No v${line}.*.* tag exists. Refusing to guess a starting version for maintenance branch '$branch'." >&2
-              exit 1
-            fi
-
-            channel="v${line}-lts"
-            is_default="false"
-          fi
-
-          echo "latest=$latest_tag" >> "$GITHUB_OUTPUT"
-          echo "channel=$channel" >> "$GITHUB_OUTPUT"
-          echo "is_default=$is_default" >> "$GITHUB_OUTPUT"
-          echo "Branch '$branch' -> channel '$channel', starting from $latest_tag"
-
-          version="${latest_tag#v}"
-          IFS='.' read -r major minor patch <<< "$version"
-
-          # %s%n%b so a `BREAKING CHANGE:` footer in the commit body is seen.
-          # Subject-only (%s) missed every footer-declared breaking change.
-          commits=$(git log "$latest_tag"..HEAD --pretty=format:"%s%n%b" 2>/dev/null || git log --pretty=format:"%s%n%b")
-
-          # Any conventional-commit type may carry `!`, not just feat/fix/refactor.
-          # A `chore!:` used to fall through to a patch bump.
-          if echo "$commits" | grep -qE "^[a-zA-Z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:"; then
-            if [ "$is_default" != "true" ]; then
-              # A major bump on a maintenance branch would jump 1.x straight to
-              # 2.0.0 and collide with the live major. If the change really is
-              # breaking it does not belong on this branch; if it is not, drop
-              # the `!` and the BREAKING CHANGE footer.
-              echo "::error::A breaking-change marker was found on maintenance branch '$branch'. Maintenance releases must not bump the major." >&2
-              exit 1
-            fi
-            major=$((major + 1))
-            minor=0
-            patch=0
-          elif echo "$commits" | grep -qE "^feat(\(.+\))?:"; then
-            minor=$((minor + 1))
-            patch=0
-          else
-            patch=$((patch + 1))
-          fi
-
-          next="v${major}.${minor}.${patch}"
-          echo "next=$next" >> "$GITHUB_OUTPUT"
-          echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
-          echo "Next version: $next (from $latest_tag)"
-
-          if git rev-parse -q --verify "refs/tags/$next" >/dev/null; then
-            echo "::error::Tag $next already exists. Refusing to republish." >&2
-            exit 1
-          fi
+        run: node ./scripts/release-policy.mjs
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -160,16 +96,21 @@ jobs:
         env:
           TAG: ${{ steps.version.outputs.next }}
           VERSION: ${{ steps.version.outputs.version }}
+          EXPECTED_RELEASE_TAG: ${{ steps.version.outputs.next }}
         run: |
+          # Re-fetch/recheck after verification: queued or re-run workflows must
+          # never release an obsolete commit or reuse a newly-created version.
+          git fetch origin --tags
+          node ./scripts/release-policy.mjs
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add package.json deno.json
           git commit -m "chore(release): bump version to v$VERSION"
           git tag -a "$TAG" -m "Release $TAG"
-          # Push back to the branch that triggered this run. Hardcoding `main`
-          # fails outright on a maintenance branch, because actions/checkout
-          # never creates a local `main` there.
-          git push origin "HEAD:$GITHUB_REF_NAME" --follow-tags
+          # A concurrent branch update or tag collision rejects BOTH updates.
+          # Push only this tag; unrelated local tags must never escape.
+          git push --atomic origin "HEAD:refs/heads/$GITHUB_REF_NAME" "refs/tags/$TAG:refs/tags/$TAG"
+
 
   publish:
     name: Publish Package
@@ -184,6 +125,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.version.outputs.tag }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -197,6 +139,12 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           run_install: false
+
+      - name: Verify pushed release tag
+        env:
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          SOURCE_SHA: ${{ needs.version.outputs.source_sha }}
+        run: node ./scripts/release-policy.mjs --verify-tag "$RELEASE_TAG" "$SOURCE_SHA"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -244,6 +192,17 @@ jobs:
         with:
           ref: ${{ needs.version.outputs.tag }}
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify pushed release tag
+        env:
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          SOURCE_SHA: ${{ needs.version.outputs.source_sha }}
+        run: node ./scripts/release-policy.mjs --verify-tag "$RELEASE_TAG" "$SOURCE_SHA"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

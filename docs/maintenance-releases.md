@@ -10,7 +10,7 @@ How to ship a patch on an older major after a new one has shipped.
 | npm dist-tag | `latest` | `v<major>-lts` |
 | JSR | becomes `latest` | does **not** become latest |
 | GitHub release | marked "Latest" | not marked "Latest" |
-| Major bump | allowed | **refused** |
+| Major bump | explicit manual dispatch only | **refused** |
 
 A maintenance branch is named exactly `<major>.x` — `1.x`, `2.x`. Any other
 non-default branch name is refused by the release workflow rather than guessed
@@ -59,9 +59,11 @@ tag on that line, same as `main`:
 
 - `fix:` / anything else → patch
 - `feat:` → minor
-- `feat!:` or a `BREAKING CHANGE:` footer → **the workflow fails**
+- Any type with `!:`, or a `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer → **the workflow fails**
 
-That last one is deliberate. A major bump on `1.x` would compute `2.0.0` and
+Breaking markers also block automatic publishing on `main`; intentional majors
+use the explicit dispatch described in [version management](./version-management.md).
+A major bump on `1.x` would compute `2.0.0` and
 collide with the live major. If a backport genuinely is breaking it does not
 belong on a maintenance line; if it is not, drop the `!`.
 
