@@ -15,8 +15,7 @@ export default defineConfig({
   plugins: [
     dts({
       insertTypesEntry: true,
-      rollupTypes: false,
-      bundledPackages: [],
+      bundleTypes: false,
       copyDtsFiles: true,
       beforeWriteFile: (filePath, content) => {
         // Remove .ts extensions from imports in declaration files for webpack compatibility
