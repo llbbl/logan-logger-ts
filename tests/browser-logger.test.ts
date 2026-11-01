@@ -1,11 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as browserEntry from '../src/browser.ts';
+import { withLoggerInternals } from '../src/core/internal.ts';
+import type { Transport, TransportContext } from '../src/core/transport.ts';
 import { type LoggerConfig, LogLevel } from '../src/core/types.ts';
 import { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from '../src/runtime/browser.ts';
+import { NodeLogger } from '../src/runtime/node.ts';
 
 describe('Browser Logger', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.clearAllMocks();
+    vi.stubEnv('NO_COLOR', undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   describe('BrowserLogger', () => {
@@ -90,9 +101,8 @@ describe('Browser Logger', () => {
       expect(consoleSpy).toHaveBeenCalledTimes(1);
       const logCall = consoleSpy.mock.calls[0];
 
-      // Should still have %c but empty style
-      expect(logCall[0]).toContain('%c');
-      expect(logCall[1]).toBe('');
+      expect(logCall).toHaveLength(1);
+      expect(logCall[0]).not.toContain('%c');
     });
 
     it('should use different colors for different log levels', () => {
@@ -207,6 +217,165 @@ describe('Browser Logger', () => {
       // Error message should be evaluated
       logger.error(() => `Error: ${expensiveFunction()}`);
       expect(expensiveFunction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('configured transports', () => {
+    const frozen = (config: Partial<LoggerConfig>) =>
+      withLoggerInternals(config, {
+        now: () => new Date('2026-01-02T03:04:05.000Z'),
+        runtime: 'browser',
+      });
+
+    it('writes the JSON envelope as one unstyled argument even with color enabled', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger(frozen({ format: 'json', timestamp: false, colorize: true })).info(
+        'structured',
+        { requestId: 'r1' }
+      );
+
+      expect(output).toHaveBeenCalledExactlyOnceWith(
+        '{"timestamp":"2026-01-02T03:04:05.000Z","level":"info","message":"structured","runtime":"browser","metadata":{"requestId":"r1"}}'
+      );
+    });
+
+    it('omits text timestamps and CSS arguments when requested', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger({ timestamp: false, colorize: false }).info('bare');
+      expect(output).toHaveBeenCalledExactlyOnceWith('INFO: bare');
+    });
+
+    it('does not emit when the configured destination list is empty', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger({ transports: [] }).info('quiet');
+      expect(output).not.toHaveBeenCalled();
+    });
+
+    it('uses the explicit console options over the logger presentation settings', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger({
+        format: 'json',
+        timestamp: true,
+        colorize: true,
+        transports: [
+          { type: 'console', options: { format: 'text', timestamp: false, colorize: false } },
+        ],
+      }).info('override');
+      expect(output).toHaveBeenCalledExactlyOnceWith('INFO: override');
+    });
+
+    it('does not replace the console renderer shared by Node loggers', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger({ timestamp: false, colorize: true }).info('browser');
+      new NodeLogger({ timestamp: false, colorize: true }).info('node');
+
+      expect(output.mock.calls).toEqual([
+        ['%cINFO: browser', 'color: #007acc; font-weight: normal;'],
+        ['\u001b[32mINFO\u001b[0m: node'],
+      ]);
+    });
+
+    it('constructs a custom destination once and shares it with descendants', () => {
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const write = vi.fn();
+      const close = vi.fn();
+      const destination: Transport = { type: 'capture', write, close };
+      const build = vi.fn((_context: TransportContext) => destination);
+      const logger = new BrowserLogger({
+        format: 'json',
+        timestamp: false,
+        colorize: true,
+        transports: [{ type: 'custom', options: { transport: build } }],
+      });
+      const child = logger.child({ requestId: 'r1' });
+      child.child({ operation: 'nested' }).info('captured');
+      logger.close();
+
+      expect(build).toHaveBeenCalledExactlyOnceWith({
+        format: 'json',
+        timestamp: false,
+        colorize: true,
+      });
+      expect(logger.getTransports()).toEqual([destination]);
+      expect(write).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          message: 'captured',
+          metadata: { requestId: 'r1', operation: 'nested' },
+        })
+      );
+      expect(close).toHaveBeenCalledOnce();
+      expect(output).not.toHaveBeenCalled();
+    });
+
+    it('filters independently for each custom destination', () => {
+      const write = vi.fn();
+      const destination: Transport = { type: 'capture', write };
+      const logger = new BrowserLogger({
+        transports: [
+          { type: 'custom', level: LogLevel.ERROR, options: { transport: destination } },
+        ],
+      });
+      logger.info('filtered');
+      logger.error('retained');
+      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'retained' }));
+    });
+
+    it('keeps healthy destinations when another fails to construct or write', () => {
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const write = vi.fn();
+      const logger = new BrowserLogger({
+        transports: [
+          { type: 'custom', options: {} },
+          {
+            type: 'custom',
+            options: {
+              transport: {
+                type: 'broken',
+                write: () => {
+                  throw new Error('broken');
+                },
+              },
+            },
+          },
+          { type: 'custom', options: { transport: { type: 'healthy', write } } },
+        ],
+      });
+      logger.info('retained');
+
+      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'retained' }));
+      expect(warning).toHaveBeenCalledTimes(2);
+      expect(warning.mock.calls[0][0]).toContain('failed to initialize');
+      expect(warning.mock.calls[1][0]).toContain('failed to write');
+    });
+
+    it('exports browser-safe named transport registration', () => {
+      expect(browserEntry.registerTransport).toBeTypeOf('function');
+      const write = vi.fn();
+      browserEntry.registerTransport('browser-fixture', () => ({ type: 'browser-fixture', write }));
+      const logger = browserEntry.createLogger({
+        ignoreEnvironment: true,
+        transports: [{ type: 'browser-fixture', options: {} }],
+      });
+      logger.info('registered');
+      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'registered' }));
+    });
+
+    it('applies NO_COLOR to direct construction and per-console options', () => {
+      vi.stubEnv('NO_COLOR', '1');
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger({
+        timestamp: false,
+        colorize: true,
+        transports: [{ type: 'console', options: { colorize: true } }],
+      }).info('plain');
+      expect(output).toHaveBeenCalledExactlyOnceWith('INFO: plain');
+    });
+
+    it('uses actual Deno terminal output even when the record runtime is pinned to browser', () => {
+      vi.stubGlobal('Deno', { version: { deno: '2.6.9' } });
+      const output = vi.spyOn(console, 'info').mockImplementation(() => {});
+      new BrowserLogger(frozen({ timestamp: false, colorize: true })).info('terminal');
+      expect(output).toHaveBeenCalledExactlyOnceWith('\u001b[32mINFO\u001b[0m: terminal');
     });
   });
 
@@ -434,15 +603,7 @@ describe('Browser Logger', () => {
   describe('Production environment behavior', () => {
     it('should respect production environment settings', () => {
       // Mock browser environment variables
-      const mockGlobalThis = {
-        process: {
-          env: {
-            NODE_ENV: 'production',
-          },
-        },
-      };
-
-      Object.assign(globalThis, mockGlobalThis);
+      vi.stubEnv('NODE_ENV', 'production');
 
       const logger = new BrowserLogger();
 

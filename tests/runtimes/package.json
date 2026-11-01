@@ -1,0 +1,9 @@
+{
+  "name": "logan-logger-runtime-tests",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

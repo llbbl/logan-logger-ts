@@ -202,20 +202,12 @@ twice on purpose: once after the precedence chain is merged, and again when the
 transports are built, because a per-transport option is only visible at that
 second point.
 
-One thing does get past it, and it is not `NO_COLOR`-specific: **constructing a
-runtime adapter yourself bypasses configuration resolution entirely.**
+Constructing `NodeLogger` or `BrowserLogger` directly skips the `LOG_*`
+configuration chain and config-file loading. Both adapters still build their
+configured transports, and that construction applies the `NO_COLOR` veto to
+logger-level and per-transport colour requests.
 
-```ts
-import { BrowserLogger } from 'logan-logger/browser';
-
-new BrowserLogger({ colorize: true }); // colours even under NO_COLOR
-```
-
-That instance honours no environment variable and no config file — `LOG_LEVEL`
-and `LOG_COLOR` are as invisible to it as `NO_COLOR` is.
-
-`new NodeLogger(config)` is *not* an escape hatch: it builds its own transports,
-and those apply the veto. Handing it pre-built ones is:
+Handing an adapter pre-built destinations bypasses that construction:
 
 ```ts
 import { NodeLogger, ConsoleTransport } from 'logan-logger/node';
@@ -225,8 +217,9 @@ new NodeLogger({}, [new ConsoleTransport({ colorize: true })]); // colours under
 
 That second parameter exists so a child logger can share its parent's
 destinations, and passing it skips transport construction — and with it the
-second place the veto is applied. It is the same hand-assembly as above, one
-layer down: a caller who builds the objects themselves owns what they emit.
+second place the veto is applied. `BrowserLogger` accepts pre-built destinations
+for the same purpose. A caller who builds the objects themselves owns what they
+emit.
 
 The same hand-assembly reaches through `createLogger()` itself, in the one place
 configuration can carry an object you built — a `custom` transport supplied as an
@@ -541,6 +534,13 @@ const logger = new NodeLogger({
 | `console` | everywhere | `format`, `timestamp`, `colorize` |
 | `file` | `logan-logger/node`, `logan-logger/bun` | `filename`, `maxsize`, `maxFiles`, `format`, `timestamp` |
 | `custom` | everywhere | `transport` — an object with `write(entry)`, or a function returning one |
+
+Browser and Deno loggers honour the same destination list, including
+`transports: []` for no output, custom destinations and registered transport
+names. The browser's console destination uses CSS arguments for coloured text;
+uncoloured text and JSON use one plain string. Deno's console destination uses
+terminal formatting instead of browser CSS. `format: 'json'` always includes
+the envelope timestamp, even when `timestamp: false` disables text timestamps.
 
 `type` is not limited to those three names. `registerTransport(name, factory)`
 adds a name, and `TransportConfig.type` accepts any string — the built-in names

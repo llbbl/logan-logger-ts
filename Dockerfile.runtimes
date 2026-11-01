@@ -1,0 +1,87 @@
+# syntax=docker/dockerfile:1.7
+
+# Build once under the project's toolchain, then exercise the resulting public
+# entries with each real runtime. No host node_modules or fixture clone is used.
+FROM node:24.13.0-bookworm-slim@sha256:4660b1ca8b28d6d1906fd644abe34b2ed81d15434d26d845ef0aced307cf4b6f AS builder
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY tests/runtimes/package.json tests/runtimes/pnpm-lock.yaml tests/runtimes/pnpm-workspace.yaml ./tests/runtimes/
+RUN pnpm --dir ./tests/runtimes install --frozen-lockfile
+
+COPY . .
+
+# The tag matches CI's existing conformance contract. The immutable commit and
+# archive checksum make the downloaded fixture bytes independently verifiable.
+ARG TREERING_REF=fixtures-v0.1.4
+ARG TREERING_COMMIT=8f98e7fe49d8c80c70a2f89863cc80f3b1f6b24d
+ARG TREERING_SHA256=ec481c1ec0fadde5e3343a41dd223b101ad31d84bfe28a7927983fd74b9d4e43
+RUN node --input-type=module <<'JS'
+import { createHash } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+
+const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
+const fixtureRef = workflow.match(/repository:\s*llbbl\/treering\s+ref:\s*(\S+)/)?.[1];
+if (fixtureRef !== process.env.TREERING_REF) {
+  throw new Error(`Docker fixture pin ${process.env.TREERING_REF} disagrees with CI (${fixtureRef ?? 'missing'})`);
+}
+
+const response = await fetch(`https://codeload.github.com/llbbl/treering/tar.gz/${process.env.TREERING_COMMIT}`);
+if (!response.ok) throw new Error(`Fixture download failed: HTTP ${response.status}`);
+const archive = Buffer.from(await response.arrayBuffer());
+const checksum = createHash('sha256').update(archive).digest('hex');
+if (checksum !== process.env.TREERING_SHA256) throw new Error('Treering fixture archive checksum mismatch');
+await writeFile('/tmp/treering.tar.gz', archive);
+JS
+RUN mkdir -p /tmp/treering ./.treering \
+    && tar -xzf /tmp/treering.tar.gz -C /tmp/treering --strip-components=1 \
+    && cp -R /tmp/treering/fixtures ./.treering/fixtures \
+    && test -f ./.treering/fixtures/README.md \
+    && rm -rf /tmp/treering /tmp/treering.tar.gz
+RUN pnpm build && node ./tests/runtimes/build.mjs
+
+FROM node:22.12.0-bookworm-slim@sha256:35531c52ce27b6575d69755c73e65d4468dba93a25644eed56dc12879cae9213 AS node22
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+CMD ["node", "./tests/runtimes/cli.mjs", "--runtime", "node", "--fixtures", "/app/.treering/fixtures"]
+
+FROM node:24.13.0-bookworm-slim@sha256:4660b1ca8b28d6d1906fd644abe34b2ed81d15434d26d845ef0aced307cf4b6f AS node24
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+CMD ["node", "./tests/runtimes/cli.mjs", "--runtime", "node", "--fixtures", "/app/.treering/fixtures"]
+
+FROM node:26.0.0-bookworm-slim@sha256:3529ef69feecddd94e9c5ecd3d25a96f2f23ea40661f494f932ae2b12ab1977c AS node26
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+CMD ["node", "./tests/runtimes/cli.mjs", "--runtime", "node", "--fixtures", "/app/.treering/fixtures"]
+
+FROM oven/bun:1.4.0@sha256:5ff609364c049b54eb0ff560ec96319729a972078ef2c755d758f0c6ef89c2d6 AS bun
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+CMD ["bun", "./tests/runtimes/cli.mjs", "--runtime", "bun", "--fixtures", "/app/.treering/fixtures"]
+
+FROM denoland/deno:2.6.9@sha256:2221eafd8a7556693307ad9889a79d4974e1844a6964acbe466ab9faa15d37bf AS deno
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+ENTRYPOINT ["deno"]
+CMD ["run", "--no-config", "--no-lock", "--allow-read=/app", "--allow-env", "./tests/runtimes/cli.mjs", "--runtime", "deno", "--fixtures", "/app/.treering/fixtures"]
+
+FROM mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea AS browsers
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/tests/runtimes ./tests/runtimes
+COPY --from=builder /app/.treering ./.treering
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+CMD ["node", "./tests/runtimes/browser.mjs", "--fixtures", "/app/.treering/fixtures"]

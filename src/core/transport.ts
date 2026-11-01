@@ -111,7 +111,7 @@ export class ConsoleTransport implements Transport {
   }
 }
 
-registerTransport('console', (config, context) => {
+const createConsoleTransport: TransportFactory = (config, context) => {
   const options = config.options ?? {};
 
   return new ConsoleTransport({
@@ -120,7 +120,9 @@ registerTransport('console', (config, context) => {
     colorize: options.colorize ?? context.colorize,
     level: config.level,
   });
-});
+};
+
+registerTransport('console', createConsoleTransport);
 
 // `{ type: 'custom', options: { transport } }` accepts any object satisfying
 // the Transport interface, so callers can plug in their own destination
@@ -183,9 +185,14 @@ function withColorDenied(entry: TransportConfig): TransportConfig {
  * initialize cannot take the others down with it.
  *
  * @param config - The logger configuration
+ * @param consoleFactory - Runtime-specific console renderer. Applies to the
+ * default console and explicit console entries without changing the registry.
  * @returns The transports that were built successfully
  */
-export function createTransports(config: Partial<LoggerConfig>): Transport[] {
+export function createTransports(
+  config: Partial<LoggerConfig>,
+  consoleFactory?: TransportFactory
+): Transport[] {
   // SPEC §6.4.1's NO_COLOR veto is read a second time here, and the duplication
   // is deliberate. Two things make this the right layer rather than one more
   // scattered environment read:
@@ -194,7 +201,7 @@ export function createTransports(config: Partial<LoggerConfig>): Transport[] {
   //    nothing else, so `{ type: 'console', options: { colorize: true } }` used
   //    to re-enable color underneath it. Per-transport options are resolved
   //    here and only here.
-  // 2. `createLogger()` and a directly constructed `new NodeLogger(...)` both
+  // 2. `createLogger()` and directly constructed runtime adapters both
   //    arrive here, and only the first passes through configuration
   //    resolution. This is where the two paths meet.
   //
@@ -210,20 +217,16 @@ export function createTransports(config: Partial<LoggerConfig>): Transport[] {
 
   // No transports configured at all means console only. File logging is
   // opt-in; it is never implied by NODE_ENV.
-  if (config.transports === undefined) {
-    return [
-      new ConsoleTransport({
-        format: context.format,
-        timestamp: context.timestamp,
-        colorize: context.colorize,
-      }),
-    ];
-  }
-
+  const entries = config.transports ?? [{ type: 'console', options: {} }];
   const transports: Transport[] = [];
 
-  for (const entry of config.transports) {
-    const factory = getTransportFactory(entry.type);
+  for (const entry of entries) {
+    const factory =
+      entry.type === 'console' && consoleFactory
+        ? consoleFactory
+        : config.transports === undefined
+          ? createConsoleTransport
+          : getTransportFactory(entry.type);
 
     if (!factory) {
       console.warn(`[logan-logger] ${describeUnknownTransport(entry.type)}`);
