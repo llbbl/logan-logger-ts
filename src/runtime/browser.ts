@@ -1,67 +1,128 @@
 import { BaseLogger } from '../core/logger.ts';
+import {
+  type ConsoleTransportOptions,
+  createTransports,
+  type Transport,
+  type TransportFactory,
+} from '../core/transport.ts';
 import { type LogEntry, type LoggerConfig, LogLevel } from '../core/types.ts';
-import { safeStringify } from '../utils/serialization.ts';
+import { formatLogEntry } from '../utils/formatting.ts';
+import { detectRuntime } from '../utils/runtime.ts';
 
-export class BrowserLogger extends BaseLogger {
-  constructor(config: Partial<LoggerConfig> = {}) {
-    super(config);
+/** Browser console presentation without leaking CSS into JSON or plain text. */
+class BrowserConsoleTransport implements Transport {
+  readonly type = 'console';
+  readonly level?: LogLevel;
+  private readonly format: 'json' | 'text';
+  private readonly timestamp: boolean;
+  private readonly colorize: boolean;
+
+  constructor(options: ConsoleTransportOptions) {
+    this.level = options.level;
+    this.format = options.format === 'json' ? 'json' : 'text';
+    this.timestamp = options.timestamp !== false;
+    this.colorize = options.colorize === true;
   }
 
-  protected writeLog(entry: LogEntry): void {
-    const message = this.formatMessage(entry);
-    const style = this.getConsoleStyle(entry.level);
-
-    // Use safeStringify for metadata to handle circular references
-    const metaStr = entry.metadata ? ` ${safeStringify(entry.metadata)}` : '';
-    const fullMessage = `%c${message}${metaStr}`;
+  write(entry: LogEntry): void {
+    const message = formatLogEntry(entry, this.format, {
+      timestamp: this.timestamp,
+      colorize: false,
+    });
+    const args: [string] | [string, string] =
+      this.format === 'text' && this.colorize
+        ? [`%c${message}`, getConsoleStyle(entry.level)]
+        : [message];
 
     switch (entry.level) {
       case LogLevel.DEBUG:
         if (console.debug) {
-          console.debug(fullMessage, style);
+          console.debug(...args);
         } else {
-          console.log(fullMessage, style);
+          console.log(...args);
         }
         break;
       case LogLevel.INFO:
-        console.info(fullMessage, style);
+        console.info(...args);
         break;
       case LogLevel.WARN:
-        console.warn(fullMessage, style);
+        console.warn(...args);
         break;
       case LogLevel.ERROR:
-        console.error(fullMessage, style);
+        console.error(...args);
         break;
+    }
+  }
+}
+
+function getConsoleStyle(level: LogLevel): string {
+  switch (level) {
+    case LogLevel.DEBUG:
+      return 'color: #888; font-weight: normal;';
+    case LogLevel.INFO:
+      return 'color: #007acc; font-weight: normal;';
+    case LogLevel.WARN:
+      return 'color: #ff8c00; font-weight: bold;';
+    case LogLevel.ERROR:
+      return 'color: #dc3545; font-weight: bold;';
+    default:
+      return '';
+  }
+}
+
+const createBrowserConsoleTransport: TransportFactory = (config, context) => {
+  const options = config.options ?? {};
+  return new BrowserConsoleTransport({
+    format: options.format ?? context.format,
+    timestamp: options.timestamp ?? context.timestamp,
+    colorize: options.colorize ?? context.colorize,
+    level: config.level,
+  });
+};
+
+export class BrowserLogger extends BaseLogger {
+  private readonly transports: Transport[];
+
+  /** Pre-built transports are adopted internally when a child is created. */
+  constructor(config: Partial<LoggerConfig> = {}, transports?: Transport[]) {
+    super(config);
+    // Deno reuses this adapter but writes to a terminal, which understands ANSI
+    // rather than browser CSS. Choose from the actual platform, not the
+    // overridable runtime label carried on a record by conformance fixtures.
+    this.transports =
+      transports ??
+      createTransports(
+        config,
+        detectRuntime().name === 'deno' ? undefined : createBrowserConsoleTransport
+      );
+  }
+
+  getTransports(): readonly Transport[] {
+    return this.transports;
+  }
+
+  close(): void {
+    for (const transport of this.transports) {
+      transport.close?.();
+    }
+  }
+
+  protected writeLog(entry: LogEntry): void {
+    for (const transport of this.transports) {
+      if (transport.level !== undefined && entry.level < transport.level) {
+        continue;
+      }
+
+      try {
+        transport.write(entry);
+      } catch (error) {
+        console.warn(`[logan-logger] transport '${transport.type}' failed to write:`, error);
+      }
     }
   }
 
   protected createChild(): BaseLogger {
-    return new BrowserLogger(this.config);
-  }
-
-  private formatMessage(entry: LogEntry): string {
-    const timestamp = entry.timestamp.toISOString();
-    const level = LogLevel[entry.level].toUpperCase();
-    return `[${timestamp}] ${level}: ${entry.message}`;
-  }
-
-  private getConsoleStyle(level: LogLevel): string {
-    if (!this.config.colorize) {
-      return '';
-    }
-
-    switch (level) {
-      case LogLevel.DEBUG:
-        return 'color: #888; font-weight: normal;';
-      case LogLevel.INFO:
-        return 'color: #007acc; font-weight: normal;';
-      case LogLevel.WARN:
-        return 'color: #ff8c00; font-weight: bold;';
-      case LogLevel.ERROR:
-        return 'color: #dc3545; font-weight: bold;';
-      default:
-        return '';
-    }
+    return new BrowserLogger(this.config, this.transports);
   }
 
   private shouldLogInProduction(): boolean {

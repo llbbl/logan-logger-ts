@@ -26,6 +26,7 @@
 | [version-management.md](./version-management.md) | Version bumping on `main` |
 | [auto-publishing-setup.md](./auto-publishing-setup.md) | How the publish pipeline is wired |
 | [git-worktrees.md](./git-worktrees.md) | Working on several branches at once |
+| [runtime-testing.md](./runtime-testing.md) | Docker fixture validation across runtimes and browsers |
 
 ## Design
 

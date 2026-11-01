@@ -1,0 +1,47 @@
+x-runtime: &runtime
+  init: true
+  network_mode: none
+  environment:
+    CI: 'true'
+  build:
+    context: .
+    dockerfile: Dockerfile.runtimes
+
+services:
+  node22:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: node22
+  node24:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: node24
+  node26:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: node26
+  bun:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: bun
+  deno:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: deno
+  browsers:
+    <<: *runtime
+    shm_size: 1gb
+    build:
+      context: .
+      dockerfile: Dockerfile.runtimes
+      target: browsers

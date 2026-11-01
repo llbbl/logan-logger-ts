@@ -198,8 +198,33 @@ export class Dsl {
     if (spec.stack === undefined) {
       // The fixture asks for an error without stack capture, which §4.2 allows.
       delete (error as { stack?: string }).stack;
+      // Firefox exposes stack through an inherited accessor, so deleting an
+      // own property alone can leave a captured stack visible. Shadow it only
+      // on runtimes that still expose a stack property through the prototype.
+      // Avoid invoking that accessor while canonicalizing the fixture input.
+      if ('stack' in error) {
+        Object.defineProperty(error, 'stack', {
+          value: undefined,
+          writable: true,
+          configurable: true,
+        });
+      }
     } else if (error.stack !== undefined) {
       this.stacks.push(error.stack);
+    }
+
+    // The language-neutral input describes only name/message/stack and the
+    // explicit props below. Bun and WebKit add their own line/sourceURL-style
+    // properties to a freshly constructed Error; those are runtime diagnostics,
+    // not custom properties requested by this fixture. Canonicalize the input
+    // before handing it to the logger, while retaining the native Error and its
+    // real captured stack. Never strip fields from the logger's output.
+    for (const property of Object.getOwnPropertyNames(error)) {
+      if (!['name', 'message', 'stack'].includes(property)) {
+        if (!Reflect.deleteProperty(error, property)) {
+          throw new Error(`Cannot materialize canonical fixture Error: '${property}' is not configurable`);
+        }
+      }
     }
 
     const nonEnumerable = new Set(spec.non_enumerable ?? []);

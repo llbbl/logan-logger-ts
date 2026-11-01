@@ -1,0 +1,474 @@
+{
+  "tag": "fixtures-v0.1.4",
+  "commit": "8f98e7fe49d8c80c70a2f89863cc80f3b1f6b24d",
+  "files": {
+    "config.json": "36c875eef94cf412dcc0b7dbbff8e3b933d0a7d3dd5213c2178ece5736ca6f27",
+    "context.json": "d2249fb283b73b68ded11015b7e483037dc1bc045d16109de2f99f29f11593ff",
+    "envelope.json": "5b1ac572f6ed211a5dac017031a078c8824605e22d7da6c25cd006fce525b18e",
+    "levels.json": "5884ff484299cb79016dc7d5e4ba1bb032fc3649b9241b990d823919159ebfe6",
+    "redaction.json": "f2fcdbe425195b65a3d9883da46eb78632aad3bbb873bb62c62c66b240eaf480",
+    "serialization.json": "d64ee4c79ff391432aee059b1703e8c24dcace446f90507e77c1fc00e9ec86d0",
+    "transports.json": "617c87eb67dc28d45558bc44c6d194edcad63eb31eed315fa7077cf6f7349349"
+  },
+  "cases": {
+    "config/default-level-info": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/default-format-text": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/default-timestamp-true": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/default-metadata-empty": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/default-transports-single-console": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/explicit-overrides-defaults": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-overrides-explicit": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/explicit-survives-unset-env": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/metadata-merges-shallowly": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/metadata-merge-is-not-deep": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/transports-replaced-wholesale": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-log-level-parsed-per-1-3": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-log-format-accepted": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-log-format-unrecognized-ignored": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-log-format-is-case-insensitive": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-true-and-1": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-yes-and-on": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-false-and-0": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-no-and-off": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-ignores-case-and-whitespace": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-unrecognized-is-unset-not-false": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-unrecognized-does-not-force-true": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-boolean-empty-string-is-unrecognized": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-level-unrecognized-falls-through": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-clean-parse-is-silent": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/env-unset-is-silent": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-logan-config-json-is-first-candidate": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-loganrc-is-parsed-as-json": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-package-json-logan-key": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-package-json-without-logan-key-is-absent": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-first-present-wins": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-loganrc-wins-over-package-json": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-malformed-warns-and-stops": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-not-an-object-is-malformed": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-level-string-normalized-to-ordinal": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-unknown-field-dropped-with-warning": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-wrong-type-dropped-with-warning": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-sits-below-explicit-config": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-sits-below-environment": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/file-metadata-merges-with-explicit": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-overrides-explicit-colorize": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-overrides-log-color-and-warns": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-empty-is-unset": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-value-is-irrelevant": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-agreeing-with-log-color-is-silent": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-unset-does-not-override": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-single-space-is-set": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "config/no-color-overrides-a-config-file": {
+      "scope": "existing-node-suite",
+      "reason": "Configuration source precedence, environment, and file loader remain in the full Node conformance suite."
+    },
+    "context/child-adds-metadata": {
+      "scope": "shared"
+    },
+    "context/nested-children-accumulate": {
+      "scope": "shared"
+    },
+    "context/child-overrides-parent": {
+      "scope": "shared"
+    },
+    "context/call-site-wins": {
+      "scope": "shared"
+    },
+    "context/merge-is-shallow": {
+      "scope": "shared"
+    },
+    "context/parent-not-mutated": {
+      "scope": "shared"
+    },
+    "context/child-opens-no-resources": {
+      "scope": "existing-node-suite",
+      "reason": "File resource ownership is covered by the full Node suite."
+    },
+    "context/lazy-not-invoked-when-filtered": {
+      "scope": "shared"
+    },
+    "context/lazy-invoked-when-emitted": {
+      "scope": "shared"
+    },
+    "envelope/json-field-order": {
+      "scope": "shared"
+    },
+    "envelope/json-metadata-omitted": {
+      "scope": "shared"
+    },
+    "envelope/json-empty-metadata-omitted": {
+      "scope": "shared"
+    },
+    "envelope/text-basic": {
+      "scope": "shared"
+    },
+    "envelope/text-no-metadata": {
+      "scope": "shared"
+    },
+    "envelope/case-asymmetry": {
+      "scope": "shared"
+    },
+    "envelope/empty-message": {
+      "scope": "shared"
+    },
+    "envelope/metadata-substitutions-apply": {
+      "scope": "shared"
+    },
+    "envelope/timestamp-disabled": {
+      "scope": "shared"
+    },
+    "envelope/colorize-never-affects-json": {
+      "scope": "shared"
+    },
+    "levels/ordinals": {
+      "scope": "shared"
+    },
+    "levels/filter-at-info": {
+      "scope": "shared"
+    },
+    "levels/filter-at-debug": {
+      "scope": "shared"
+    },
+    "levels/filter-at-error": {
+      "scope": "shared"
+    },
+    "levels/silent-suppresses-all": {
+      "scope": "shared"
+    },
+    "levels/parse-canonical": {
+      "scope": "existing-node-suite",
+      "reason": "String parser utility is not exported by every runtime entry; covered by the full Node suite."
+    },
+    "levels/parse-case-insensitive": {
+      "scope": "existing-node-suite",
+      "reason": "String parser utility is not exported by every runtime entry; covered by the full Node suite."
+    },
+    "levels/parse-aliases": {
+      "scope": "existing-node-suite",
+      "reason": "String parser utility is not exported by every runtime entry; covered by the full Node suite."
+    },
+    "levels/parse-unknown-defaults-to-info": {
+      "scope": "existing-node-suite",
+      "reason": "String parser utility is not exported by every runtime entry; covered by the full Node suite."
+    },
+    "levels/no-silent-emit-method": {
+      "scope": "shared"
+    },
+    "redaction/defaults": {
+      "scope": "shared"
+    },
+    "redaction/case-insensitive": {
+      "scope": "shared"
+    },
+    "redaction/substring-overmatch": {
+      "scope": "shared"
+    },
+    "redaction/recurses": {
+      "scope": "shared"
+    },
+    "redaction/preserves-lists": {
+      "scope": "shared"
+    },
+    "redaction/custom-keys-replace-defaults": {
+      "scope": "shared"
+    },
+    "redaction/scalars-pass-through": {
+      "scope": "shared"
+    },
+    "redaction/not-automatic": {
+      "scope": "shared"
+    },
+    "redaction/word-boundary-separators": {
+      "scope": "shared"
+    },
+    "redaction/word-boundary-joined-spellings": {
+      "scope": "shared"
+    },
+    "redaction/word-boundary-plurals": {
+      "scope": "shared"
+    },
+    "redaction/word-boundary-digits": {
+      "scope": "shared"
+    },
+    "redaction/custom-keys-get-plurals": {
+      "scope": "shared"
+    },
+    "redaction/multi-token-custom-keys": {
+      "scope": "shared"
+    },
+    "redaction/plural-direction-is-one-way": {
+      "scope": "shared"
+    },
+    "redaction/plural-direction-reverse": {
+      "scope": "shared"
+    },
+    "redaction/empty-keys-match-nothing": {
+      "scope": "shared"
+    },
+    "redaction/preserves-cycles": {
+      "scope": "shared"
+    },
+    "redaction/repeated-references": {
+      "scope": "shared"
+    },
+    "serialization/plain": {
+      "scope": "shared"
+    },
+    "serialization/circular-self": {
+      "scope": "shared"
+    },
+    "serialization/circular-indirect": {
+      "scope": "shared"
+    },
+    "serialization/repeated-not-circular": {
+      "scope": "shared"
+    },
+    "serialization/function-named": {
+      "scope": "shared"
+    },
+    "serialization/function-anonymous": {
+      "scope": "shared"
+    },
+    "serialization/undefined": {
+      "scope": "shared"
+    },
+    "serialization/bigint": {
+      "scope": "shared"
+    },
+    "serialization/symbol": {
+      "scope": "shared"
+    },
+    "serialization/error-basic": {
+      "scope": "shared"
+    },
+    "serialization/error-custom-props": {
+      "scope": "shared"
+    },
+    "serialization/error-non-enumerable": {
+      "scope": "shared"
+    },
+    "serialization/nested-mixed": {
+      "scope": "shared"
+    },
+    "serialization/never-throws": {
+      "scope": "shared"
+    },
+    "transports/omitted-yields-single-console": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/supplied-exactly-and-in-order": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/empty-list-is-honored": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/file-is-not-implied-by-environment": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/unknown-type-reported-and-skipped": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/unknown-type-alone-does-not-abort": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/registered-name-is-usable-from-config": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/receives-presentation-context": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/presentation-context-follows-a-config-file": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/no-color-outranks-a-transport-option": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/transport-option-still-wins-for-other-fields": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/construction-failure-does-not-block-others": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/construction-failure-names-the-transport": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/per-transport-level-filters-independently": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/logger-threshold-still-applies": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/no-transport-level-means-logger-level": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/silent-transport-level-suppresses-everything": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/level-as-string-from-a-config-file": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    },
+    "transports/unparseable-level-from-a-config-file-is-dropped": {
+      "scope": "existing-node-suite",
+      "reason": "Full transport construction, filesystem, and registry contract remain in the full Node suite; runtime output regressions have separate fixtures."
+    }
+  }
+}

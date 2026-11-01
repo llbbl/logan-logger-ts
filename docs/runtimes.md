@@ -11,8 +11,8 @@ surface that reflects what is actually available there.
 | Node.js 22.12+ | `logan-logger/node` | `NodeLogger` | File transport, Morgan integration |
 | Bun | `logan-logger/bun` | `NodeLogger` | Same as Node |
 | Browser | `logan-logger/browser` | `BrowserLogger` | CSS styling, performance marks, grouping |
-| Deno | `jsr:@logan/logger` | `BrowserLogger` | Console only; native implementation planned |
-| WebWorker | `logan-logger/browser` | `BrowserLogger` | Console only |
+| Deno | `jsr:@logan/logger` | `BrowserLogger` | Terminal console and custom transports; no built-in file transport |
+| WebWorker | `logan-logger/browser` | `BrowserLogger` | Console and custom transports |
 
 Use named imports throughout. **There is no default export** on any entry point.
 
@@ -66,7 +66,15 @@ logger.measure('api-duration', 'api-start');
 ```
 
 Also exports `ConsoleGroupLogger` for grouped output. `colorize` here applies CSS
-through the console's `%c` mechanism rather than ANSI.
+through the console's `%c` mechanism rather than ANSI. JSON and uncoloured text
+emit one plain console string without CSS arguments. `timestamp: false` removes
+timestamps from text; JSON retains its envelope timestamp.
+
+`transports` works like the Node adapter: omit it for console output, supply
+`[]` to disable output, or configure console and custom destinations. The browser
+entry exports `registerTransport` for named destinations. `BrowserLogger`
+provides `getTransports()` and `close()`, and its children share their parent's
+transport instances.
 
 ## Deno
 
@@ -79,6 +87,12 @@ createLogger({ colorize: true }).info('Deno application started');
 JSR publishes `src/` rather than a build output, so Deno consumers type-check
 against the library's actual source. `deno task check` runs in CI to keep that
 honest.
+
+Deno currently uses the same adapter as the browser, with terminal console
+formatting: coloured text uses ANSI, and JSON and uncoloured text have no browser
+CSS arguments. Format, timestamp and destination settings are honoured, including
+empty or custom destination lists. The built-in file transport remains available
+only through the Node and Bun entries.
 
 ## Bun
 

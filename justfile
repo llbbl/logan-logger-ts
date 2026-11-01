@@ -34,6 +34,10 @@ test-run:
 conformance:
     ./node_modules/.bin/vitest run tests/conformance --reporter=verbose
 
+# Validate shared fixtures in pinned Node/Bun/Deno and real browser containers
+test-runtimes:
+    ./scripts/test-runtimes.sh
+
 # Run linter (Biome)
 lint:
     pnpm lint

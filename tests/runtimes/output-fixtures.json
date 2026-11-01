@@ -1,0 +1,543 @@
+[
+  {
+    "id": "runtime-output/json-no-styling",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "json",
+        "timestamp": false,
+        "colorize": true
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "structured"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "{\"timestamp\":\"2026-08-22T04:15:30.123Z\",\"level\":\"info\",\"message\":\"structured\",\"runtime\":\"node\"}"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/text-timestamp-disabled",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": false
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "bare"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "INFO: bare"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/empty-transports",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "transports": []
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "must be silent"
+        }
+      ]
+    },
+    "expect": {
+      "console": []
+    }
+  },
+  {
+    "id": "runtime-output/custom-destination",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "json",
+        "timestamp": false,
+        "colorize": false,
+        "transports": [
+          {
+            "type": "custom",
+            "options": {}
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "sent",
+          "metadata": {
+            "request": 1
+          }
+        }
+      ]
+    },
+    "expect": {
+      "console": [],
+      "builds": 1,
+      "contexts": [
+        {
+          "format": "json",
+          "timestamp": false,
+          "colorize": false
+        }
+      ],
+      "writes": [
+        {
+          "timestamp": "2026-08-22T04:15:30.123Z",
+          "level": 1,
+          "message": "sent",
+          "metadata": {
+            "request": 1
+          },
+          "runtime": "node"
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/child-shares-custom-transport",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": true,
+        "colorize": false,
+        "transports": [
+          {
+            "type": "custom",
+            "level": "error",
+            "options": {}
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 2,
+          "level": "warn",
+          "message": "filtered"
+        },
+        {
+          "logger": 1,
+          "level": "error",
+          "message": "child error"
+        },
+        {
+          "logger": 2,
+          "level": "error",
+          "message": "grandchild error"
+        }
+      ],
+      "children": [
+        {
+          "request": 1
+        },
+        {
+          "span": 2
+        }
+      ]
+    },
+    "expect": {
+      "console": [],
+      "builds": 1,
+      "writes": [
+        {
+          "timestamp": "2026-08-22T04:15:30.123Z",
+          "level": 3,
+          "message": "child error",
+          "metadata": {
+            "request": 1
+          },
+          "runtime": "node"
+        },
+        {
+          "timestamp": "2026-08-22T04:15:30.123Z",
+          "level": 3,
+          "message": "grandchild error",
+          "metadata": {
+            "request": 1,
+            "span": 2
+          },
+          "runtime": "node"
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/console-timestamp-override",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": false,
+        "transports": [
+          {
+            "type": "console",
+            "options": {
+              "timestamp": true
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "override"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "[2026-08-22T04:15:30.123Z] INFO: override"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/console-format-override",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": false,
+        "transports": [
+          {
+            "type": "console",
+            "options": {
+              "format": "json"
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "json override"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "{\"timestamp\":\"2026-08-22T04:15:30.123Z\",\"level\":\"info\",\"message\":\"json override\",\"runtime\":\"node\"}"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/console-level-filter",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": false,
+        "transports": [
+          {
+            "type": "console",
+            "level": "error",
+            "options": {}
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "warn",
+          "message": "filtered"
+        },
+        {
+          "logger": 0,
+          "level": "error",
+          "message": "visible"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "error",
+          "args": [
+            "ERROR: visible"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/custom-format-text-fallback",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "custom",
+        "timestamp": false,
+        "colorize": false
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "fallback"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "INFO: fallback"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/browser-css",
+    "runtimes": [
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": true
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "styled"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "%cINFO: styled",
+            "color: #007acc; font-weight: normal;"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/terminal-ansi",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": true
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "styled"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "\u001b[32mINFO\u001b[0m: styled"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/console-color-disabled",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "text",
+        "timestamp": false,
+        "colorize": true,
+        "transports": [
+          {
+            "type": "console",
+            "options": {
+              "colorize": false
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "logger": 0,
+          "level": "info",
+          "message": "plain"
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "INFO: plain"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "runtime-output/error-explicit-platform-keys",
+    "runtimes": [
+      "node",
+      "bun",
+      "deno",
+      "browser"
+    ],
+    "input": {
+      "config": {
+        "level": "debug",
+        "format": "json",
+        "colorize": false
+      },
+      "actions": [
+        {
+          "level": "info",
+          "message": "custom error",
+          "metadata": {
+            "error": {
+              "$error": {
+                "name": "Error",
+                "message": "custom",
+                "props": {
+                  "line": 7,
+                  "sourceURL": "caller-supplied.js"
+                },
+                "non_enumerable": [
+                  "line"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expect": {
+      "console": [
+        {
+          "method": "info",
+          "args": [
+            "{\"timestamp\":\"2026-08-22T04:15:30.123Z\",\"level\":\"info\",\"message\":\"custom error\",\"runtime\":\"node\",\"metadata\":{\"error\":{\"name\":\"Error\",\"message\":\"custom\",\"line\":7,\"sourceURL\":\"caller-supplied.js\"}}}"
+          ]
+        }
+      ]
+    }
+  }
+]
