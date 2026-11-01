@@ -20,7 +20,6 @@ for a dual ESM/CJS package, so the floor is not raised to suit pnpm.
 ```bash
 pnpm test              # vitest, single run
 pnpm test:watch        # watch mode
-pnpm test:coverage
 
 pnpm typecheck         # tsc --noEmit
 pnpm lint              # biome
