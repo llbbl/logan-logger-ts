@@ -107,17 +107,19 @@ and may need a spec change first.
 
 ### Commit messages drive releases
 
-Every merge to `main` publishes. The version is computed from the commit
+Eligible merges to `main` publish a patch or minor release. The version is computed from the commit
 messages since the last tag:
 
 | Message | Bump |
 |---|---|
 | `fix:`, `chore:`, `docs:`, anything else | patch |
 | `feat:` | minor |
-| any type with `!:`, or a `BREAKING CHANGE:` footer | **major** |
+| any type with `!:`, or a `BREAKING CHANGE:` / `BREAKING-CHANGE:` footer | **automatic publishing fails** |
 
-Squash-merge concatenates every commit in the PR, so a marker anywhere in the
-range counts. Simulate before merging:
+Inspect the final merge message and the full release range: subjects and bodies
+both count. An intentional major requires the exact next-major confirmation in
+**Actions → Auto Release → Run workflow** on the default branch; see
+[version management](./docs/version-management.md). Check markers before merging:
 
 ```bash
 git log "$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"..HEAD \

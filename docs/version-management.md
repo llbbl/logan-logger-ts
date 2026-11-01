@@ -1,56 +1,63 @@
-# Version Management for logan-logger
+# Version management
 
-This document explains how version management is handled in the logan-logger project. This project uses a centralized version management approach where `package.json` serves as the single source of truth for the package version, eliminating the need to maintain version numbers in multiple configuration files.
+The release workflow computes versions from strict `v<major>.<minor>.<patch>`
+tags and commit messages. It updates **both** `package.json` and `deno.json`,
+checks the project, and commits the synchronized versions before tagging.
 
-## Implementation
+## Automatic patch and minor releases
 
-```bash
-"publish:jsr": "deno publish --set-version ${npm_package_version:-$(npm pkg get version | tr -d '\"')}"
-```
+A push to `main` or a `<major>.x` maintenance branch starts
+[Auto Release](../.github/workflows/auto-release.yml). A push containing only
+`.github/**` and `docs/**` changes is skipped. README changes are published.
+Release-bot version commits are skipped to prevent recursion.
 
-## How It Works
+| Commit subject or body since the last release | Result |
+|---|---|
+| `feat:` or `feat(scope):` | Minor release |
+| `fix:`, `chore:`, or other messages | Patch release |
+| Any conventional type with `!:`; `BREAKING CHANGE:` or `BREAKING-CHANGE:` footer | Publishing fails before any version commit or tag |
 
-### The Problem
-- JSR publishing typically requires a version in `jsr.json`
-- Deno projects often have versions in `deno.json`
-- Maintaining the same version across multiple files is error-prone and redundant
+Inspect all commit subjects **and bodies** before merging. An accidental marker
+must be corrected in the release history; a genuine breaking change requires
+the explicit process below. Removing a marker does not make an incompatible
+change safe for an automatic release.
 
-### The Solution
-We use shell parameter expansion with a fallback chain:
+The default branch starts from the highest valid release tag in the repository,
+including tags unreachable from its current HEAD. Maintenance branches use only
+tags from their own major. The tag major must match the checked-in manifests;
+manually changing a manifest major or pushing a higher-major tag cannot authorize
+an automatic major release. An untagged project can bootstrap from `0.0.0` only.
 
-1. **Primary**: `$npm_package_version` - Available when running via package manager
-2. **Fallback**: `$(npm pkg get version | tr -d '\"')` - Direct package.json read
+## Intentional major releases
 
-### When Each Method Is Used
+After reviewing and merging the breaking change:
 
-**Scenario 1: Running via package manager**
-```bash
-pnpm run publish:jsr
-# npm_package_version is automatically set by pnpm
-# Uses the pre-parsed environment variable (faster)
-```
+1. Open **Actions → Auto Release → Run workflow**.
+2. Select the repository default branch (`main`).
+3. Enter the exact next major version, such as `3.0.0` when the current release
+   line is `2.x`. Do not include a `v` prefix.
+4. Run the workflow and verify the npm, JSR, and GitHub release jobs succeed.
 
-**Scenario 2: Running directly**
-```bash
-deno publish --set-version ${npm_package_version:-$(npm pkg get version | tr -d '\"')}
-# npm_package_version is not set
-# Falls back to reading package.json directly
-```
+The dispatch is the explicit authorization to publish a major. It refuses tag
+refs, maintenance branches, skipped majors, minor/patch inputs, stale commits,
+existing tags, and mismatched manifest versions. It works even if the previous
+push was blocked by a breaking marker or contained only documentation changes.
 
-## Benefits
+Runs on the same branch serialize through publication. The workflow rechecks
+the selected source and version after verification, then atomically pushes only
+its release commit and specific tag. Registry publication and GitHub release
+creation independently verify the pushed tag, both versions, the source commit,
+and whether the event authorized a major release.
 
-- **Single source of truth**: Version only maintained in `package.json`
-- **No config file duplication**: Removes version from `deno.json` and `jsr.json`
-- **Works everywhere**: Functions whether run via package manager or directly
-- **Performance optimized**: Uses pre-parsed environment variable when available
-- **Error resistant**: No risk of mismatched versions between config files
+## Local version tools
 
-## Usage
+`just version` and `just versions` inspect versions. `just version-sync` copies
+the package version into `deno.json` locally.
 
-```bash
-# Recommended: Run via package manager
-pnpm run publish:jsr
+Legacy `just bump-*` recipes create version commits and tags; `just release-*`
+also push them. They do **not** invoke the publishing workflow for a skipped
+release-bot commit or a tag push. Use the workflow above for releases; do not
+combine local bump/tag recipes with automatic version selection.
 
-# Also works: Direct execution
-deno publish --set-version ${npm_package_version:-$(npm pkg get version | tr -d '\"')}
-```
+For older release lines, see [maintenance releases](./maintenance-releases.md).
+For registry configuration, see [publishing setup](./auto-publishing-setup.md).
