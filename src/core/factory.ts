@@ -29,12 +29,11 @@ export class LoggerFactory {
         return new NodeLogger(mergedConfig);
 
       case 'deno':
-        // For now, use console-based logger for Deno
-        // TODO: Implement Deno-specific logger
+        // Deno has no dedicated adapter; the console-based BrowserLogger covers it.
         return new BrowserLogger(mergedConfig);
 
       case 'bun':
-        // For now, use Node.js logger for Bun (similar APIs)
+        // Bun implements the Node APIs NodeLogger needs, so it shares that adapter.
         return new NodeLogger(mergedConfig);
 
       case 'browser':

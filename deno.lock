@@ -2,10 +2,10 @@
   "version": "5",
   "specifiers": {
     "npm:@arethetypeswrong/cli@~0.18.2": "0.18.5_marked@9.1.6",
-    "npm:@biomejs/biome@^2.4.7": "2.5.10",
+    "npm:@biomejs/biome@^2.6.4": "2.6.4",
     "npm:@types/node@^26.6.6": "26.6.6",
     "npm:@vitest/ui@^4.1.12": "4.1.12_vitest@4.1.12__@types+node@26.6.6__@vitest+ui@4.1.12__vite@8.3.5___@types+node@26.6.6_@types+node@26.6.6_vite@8.3.5__@types+node@26.6.6",
-    "npm:publint@~0.3.15": "0.3.24",
+    "npm:publint@~0.3.25": "0.3.25",
     "npm:typescript@^5.9.3": "5.9.3",
     "npm:vite-plugin-dts@^5.1.2": "5.1.2_vite@8.3.5__@types+node@26.6.6_typescript@5.9.3_@types+node@26.6.6",
     "npm:vite@^8.3.5": "8.3.5_@types+node@26.6.6",
@@ -41,9 +41,11 @@
         "validate-npm-package-name"
       ]
     },
-    "@biomejs/biome@2.5.10": {
-      "integrity": "sha512-WRKXARA3kTuiV5sxqTpobJ/I0MVd4vk3pOL6wnp5az4LntFIhWTj1RWZq3DI9PCEN3lXcqy7p5aqUHzvq8AXyQ==",
+    "@biomejs/biome@2.6.4": {
+      "integrity": "sha512-8sKKwaNW4ot22awZ3lBjwWLHnUFXgXnrBPYS2gNlBAXRbDC++7kqjK2H7dR/FgCDtPvO1xfKpgEhJkGxAKYkxA==",
       "optionalDependencies": [
+        "@biomejs/cli-android-arm64",
+        "@biomejs/cli-android-x64",
         "@biomejs/cli-darwin-arm64",
         "@biomejs/cli-darwin-x64",
         "@biomejs/cli-linux-arm64",
@@ -55,43 +57,53 @@
       ],
       "bin": true
     },
-    "@biomejs/cli-darwin-arm64@2.5.10": {
-      "integrity": "sha512-ItCrxKK6SXVT6flYs0qIuBd4AA3TTTl4d66Re6YI2FuGZnN85NmuYNzkiTJUyYw8qBLv69L5zTUB6uyWd++h3Q==",
+    "@biomejs/cli-android-arm64@2.6.4": {
+      "integrity": "sha512-jwrwigP4tBcHxzuV8izioX/BOUhJL/4e2rNSOE5nCjBkVC018LQAQUGiH+CNkFYvLtQ1dcZo5/xXERmaAGc7JQ==",
+      "os": ["android"],
+      "cpu": ["arm64"]
+    },
+    "@biomejs/cli-android-x64@2.6.4": {
+      "integrity": "sha512-HdGInPJ4nZFwHxzvEtcp2nmSBtUyJrurmtIK43upFckuS3+ZqVM05HtsxQWnqGsuy/pxckIAjyKWlEKRlBXUyA==",
+      "os": ["android"],
+      "cpu": ["x64"]
+    },
+    "@biomejs/cli-darwin-arm64@2.6.4": {
+      "integrity": "sha512-0VvcUz46wbg59Q4TZ59KkIjDJrxEyu4Eoe79+F4SChxoWe+W7AEyIp6F5r72C9+p6MsB6dIovnZt1D30lGM3XA==",
       "os": ["darwin"],
       "cpu": ["arm64"]
     },
-    "@biomejs/cli-darwin-x64@2.5.10": {
-      "integrity": "sha512-yLsPU9pAmtChXDu8vhKAzErqe+LeeYuwuUB2FZMkRitsmdodxsYRa9KHrFispsUHzzOu+9HB3nP/TQxyia+Sjw==",
+    "@biomejs/cli-darwin-x64@2.6.4": {
+      "integrity": "sha512-fxmvkF81srlS3DiMyfm+aG3J0eG+6/BjaxRyjy57KbLSafnq0PO+hHfVWmtH2ty0S7nm6yDXBRwySfFeaRJKRQ==",
       "os": ["darwin"],
       "cpu": ["x64"]
     },
-    "@biomejs/cli-linux-arm64-musl@2.5.10": {
-      "integrity": "sha512-t1QAKZwQJRB4dvgJSgFiQ4BNfNPChg69BNonz854qLVxnjT3UvDzQg9mbkTJRu35ZqU0Rw10A73J8Urgbg2RPw==",
+    "@biomejs/cli-linux-arm64-musl@2.6.4": {
+      "integrity": "sha512-31ZaH/MHqPX+O+evRwRrCHQ8W5/9adY+/eMytGGWZnRx1T41QsWIF09+/WujynLBhWZUxNGS5CtsWLwgOFTAyg==",
       "os": ["linux"],
       "cpu": ["arm64"]
     },
-    "@biomejs/cli-linux-arm64@2.5.10": {
-      "integrity": "sha512-VG8uQW/86a1roLaIFvtIbEigxIdzdJ190oGyg1tV7VYeQtOS+x10sflk7WbuXgw91EtZX5DlIIIej1YqkNLlcg==",
+    "@biomejs/cli-linux-arm64@2.6.4": {
+      "integrity": "sha512-6+bK1Y/evmIUiJr7auertuMbiaYVicJhqA1bZyL47lCMWugv8l0gFQCqvR/gN1vZMHYm+HwoTKgeMxdNFCoQTg==",
       "os": ["linux"],
       "cpu": ["arm64"]
     },
-    "@biomejs/cli-linux-x64-musl@2.5.10": {
-      "integrity": "sha512-pgDDqp9JybHm2I0KRgzN6i4+lt8xu4iqxUwLzglUMmOmyRTU1AYBGKzh9sNMOtIjah7xoWvKHlLVetvyifzoiQ==",
+    "@biomejs/cli-linux-x64-musl@2.6.4": {
+      "integrity": "sha512-bomSa2XdQAGGj6Cwdm4M13qE+lN9+AOlW8KtI4hdyVyRRF/Z71qPAi95T4wtdZK0QpBbkTW8hgbZZCwPi4xzIw==",
       "os": ["linux"],
       "cpu": ["x64"]
     },
-    "@biomejs/cli-linux-x64@2.5.10": {
-      "integrity": "sha512-4O6T0eq2heoHZN0a9UX+rWQoxXEBaKf+lRi2hbsGlHneUz9BWXM76nEWMK7Eeq8gzMxR1khQB6BFpAASpeXqGg==",
+    "@biomejs/cli-linux-x64@2.6.4": {
+      "integrity": "sha512-tbFZMdL6dP/ws4edXxYG9WhvaVa1ZDzL4G5DzahnWW7Psib9H+VTdyU4XXVxpJk5j/nYZroSbvSNyYlpW3yCIw==",
       "os": ["linux"],
       "cpu": ["x64"]
     },
-    "@biomejs/cli-win32-arm64@2.5.10": {
-      "integrity": "sha512-pxAbxduPO4xq/Cvgaa2lOrs9BB0hEXmmDqfMNP4ZOffGOkUrD1/QGw9UAMpFQpX2P8MqTIIRuQKcmetum4Oa6A==",
+    "@biomejs/cli-win32-arm64@2.6.4": {
+      "integrity": "sha512-eCsqt8Ma3eVap+oyJCDnJZH60SIU464B66n3y38EUTJdM1T/HfZol1FJC9vb+sHToX0ix8XzqPcwJnOzyAJz0g==",
       "os": ["win32"],
       "cpu": ["arm64"]
     },
-    "@biomejs/cli-win32-x64@2.5.10": {
-      "integrity": "sha512-M+2dgBsl3lXRiTfgPVc2p3anS4Tocojke4rzFLScZ2Y/wmF+36dRb1iHCLiyGqOzQGyTplZH1HnEYviiAqi3nA==",
+    "@biomejs/cli-win32-x64@2.6.4": {
+      "integrity": "sha512-pYsMy5AThiHFOZAsngg8qN4PurM6nInKBhVX7sbj3eNpRQqo1Hb0MgCwPL7VqVMrmcEEMj9Ks3qbkallR65e8g==",
       "os": ["win32"],
       "cpu": ["x64"]
     },
@@ -691,8 +703,8 @@
     "obug@2.2.1": {
       "integrity": "sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q=="
     },
-    "package-manager-detector@1.8.0": {
-      "integrity": "sha512-yQA4H19AmPEoMUeavPMDIe1higySl/gH/yaQrkT/s07Qp+7pp2hYz30N3z2l5BkjVkF9Ow6o0wjJamm2y7Sn0A=="
+    "package-manager-detector@1.9.0": {
+      "integrity": "sha512-zAMfbta9nPA8AKkA4WdmNAT8R8s6Dk0/xwPsqNnRidMFcLo1YkLuPDTgs2f64XdzS8vbLNnoJ+uUIkgbz7oRHA=="
     },
     "parse5-htmlparser2-tree-adapter@6.0.1": {
       "integrity": "sha512-qPuWvbLgvDGilKc5BoicRovlT4MtYT6JfJyBOMDsKoiT+GiuP5qyrPCnR9HcPECIJJmZh5jRndyNThnhhb/vlA==",
@@ -742,8 +754,8 @@
         "source-map-js"
       ]
     },
-    "publint@0.3.24": {
-      "integrity": "sha512-9zS56KrKBoqi5Qt8h92uMP8TTM9AYZSgnmCo4u2priMqkOZvQnTsziZ2p5LJ2ywbYkAjoCDp2jda9u4cgFefIw==",
+    "publint@0.3.25": {
+      "integrity": "sha512-WMMbn/d7JqRlfXQL/JUI4n5skC8cJ5WVr8/wT5mmiYWkUdENkZr1I5rgs2+dQPVRgoJd+JRYtB46MTsuDylw9g==",
       "dependencies": [
         "@publint/pack",
         "package-manager-detector",
@@ -1080,10 +1092,10 @@
     "packageJson": {
       "dependencies": [
         "npm:@arethetypeswrong/cli@~0.18.2",
-        "npm:@biomejs/biome@^2.4.7",
+        "npm:@biomejs/biome@^2.6.4",
         "npm:@types/node@^26.6.6",
         "npm:@vitest/ui@^4.1.12",
-        "npm:publint@~0.3.15",
+        "npm:publint@~0.3.25",
         "npm:typescript@^5.9.3",
         "npm:vite-plugin-dts@^5.1.2",
         "npm:vite@^8.3.5",

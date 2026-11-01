@@ -33,7 +33,6 @@
 | | |
 |---|---|
 | [spec.md](./spec.md) | Architecture and design goals |
-| [tasks.md](./tasks.md) | Development roadmap |
 | [Treering](https://github.com/llbbl/treering) | The cross-language logging spec this library implements |
 
 ## Historical
