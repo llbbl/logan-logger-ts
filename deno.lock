@@ -6,8 +6,8 @@
     "npm:@types/node@^26.6.6": "26.6.6",
     "npm:@vitest/ui@^5.0.5": "5.0.5_vitest@5.0.5__@types+node@26.6.6__@vitest+ui@5.0.5__vite@8.3.5___@types+node@26.6.6_@types+node@26.6.6_vite@8.3.5__@types+node@26.6.6",
     "npm:publint@~0.3.25": "0.3.25",
-    "npm:typescript@^5.9.3": "5.9.3",
-    "npm:vite-plugin-dts@^5.1.2": "5.1.2_vite@8.3.5__@types+node@26.6.6_typescript@5.9.3_@types+node@26.6.6",
+    "npm:typescript@~6.0.3": "6.0.3",
+    "npm:vite-plugin-dts@^5.1.2": "5.1.2_vite@8.3.5__@types+node@26.6.6_typescript@6.0.3_@types+node@26.6.6",
     "npm:vite@^8.3.5": "8.3.5_@types+node@26.6.6",
     "npm:vitest@^5.0.5": "5.0.5_@types+node@26.6.6_@vitest+ui@5.0.5__vitest@5.0.5__@types+node@26.6.6__vite@8.3.5___@types+node@26.6.6_vite@8.3.5__@types+node@26.6.6"
   },
@@ -314,33 +314,33 @@
         "@volar/source-map"
       ]
     },
-    "@volar/language-service@2.4.30_typescript@5.9.3": {
+    "@volar/language-service@2.4.30_typescript@6.0.3": {
       "integrity": "sha512-w/xDsASiqC71ggCOm7sTDXDNk/l72XEptodeRC68tgZ0e5QM4hM3zAqBGC7mBctvhrpYwKfMG+t9xcUo2hEFtA==",
       "dependencies": [
         "@volar/language-core",
-        "typescript@5.9.3",
+        "typescript@6.0.3",
         "vscode-languageserver-protocol",
         "vscode-languageserver-textdocument",
         "vscode-uri"
       ],
       "optionalPeers": [
-        "typescript@5.9.3"
+        "typescript@6.0.3"
       ]
     },
     "@volar/source-map@2.4.30": {
       "integrity": "sha512-zym1ob/KwDDyN+0jGVtxwbxJSRRnUvv5HspCtz3yEfVVdCG4/dzxJktMGPAgemqRuVs81O0o/y0q3qOUErR8kg=="
     },
-    "@volar/typescript@2.4.30_typescript@5.9.3": {
+    "@volar/typescript@2.4.30_typescript@6.0.3": {
       "integrity": "sha512-/DgA5tgYFPfrLFuSjIMXMGHk1LQv2+P8eny6+BhGNzFJELWIW7UZlc56ZLIRFhLsPpMfIFxM8/HvOPBggrjTZg==",
       "dependencies": [
         "@volar/language-core",
         "@volar/language-service",
         "path-browserify",
-        "typescript@5.9.3",
+        "typescript@6.0.3",
         "vscode-uri"
       ],
       "optionalPeers": [
-        "typescript@5.9.3"
+        "typescript@6.0.3"
       ]
     },
     "acorn@8.19.0": {
@@ -863,8 +863,8 @@
       "integrity": "sha512-E3b2+1zEFu84jB0YQi9BORDjz9+jGbwwy1Zi3G0LUNw7a7cePUrHMRNy8aPh53nXpkFGVHSxIZo5vKTfYaFiBQ==",
       "bin": true
     },
-    "typescript@5.9.3": {
-      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+    "typescript@6.0.3": {
+      "integrity": "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==",
       "bin": true
     },
     "ufo@1.6.4": {
@@ -876,7 +876,7 @@
     "unicode-emoji-modifier-base@1.0.0": {
       "integrity": "sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g=="
     },
-    "unplugin-dts@1.1.2_typescript@5.9.3_vite@8.3.5__@types+node@26.6.6_@types+node@26.6.6": {
+    "unplugin-dts@1.1.2_typescript@6.0.3_vite@8.3.5__@types+node@26.6.6_@types+node@26.6.6": {
       "integrity": "sha512-RDqy90XUmFj6rz4U5YoTMdYdaCJe2ZnQZaWIjkWS4952Gv0zBTQyqWtlGgVMPYHa982dURvyoc+sUOFIcDFv+w==",
       "dependencies": [
         "@rollup/pluginutils",
@@ -887,7 +887,7 @@
         "kolorist",
         "local-pkg",
         "magic-string@0.30.21",
-        "typescript@5.9.3",
+        "typescript@6.0.3",
         "unplugin",
         "vite"
       ],
@@ -907,7 +907,7 @@
     "validate-npm-package-name@5.0.1": {
       "integrity": "sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ=="
     },
-    "vite-plugin-dts@5.1.2_vite@8.3.5__@types+node@26.6.6_typescript@5.9.3_@types+node@26.6.6": {
+    "vite-plugin-dts@5.1.2_vite@8.3.5__@types+node@26.6.6_typescript@6.0.3_@types+node@26.6.6": {
       "integrity": "sha512-1bXUz836sWq6ewEMQre3ZtNFVfZk/92DppgCCKP8tWx/NWwV2wHuXlRHb2TztHjbikPxvyAGLGu7hVh94Plwww==",
       "dependencies": [
         "unplugin-dts",
@@ -1056,7 +1056,7 @@
         "npm:@types/node@^26.6.6",
         "npm:@vitest/ui@^5.0.5",
         "npm:publint@~0.3.25",
-        "npm:typescript@^5.9.3",
+        "npm:typescript@~6.0.3",
         "npm:vite-plugin-dts@^5.1.2",
         "npm:vite@^8.3.5",
         "npm:vitest@^5.0.5"
