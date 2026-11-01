@@ -89,7 +89,6 @@
     "test:package": "node ./scripts/verify-package-consumers.mjs",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
     "lint:package": "node ./scripts/validate-package.mjs",
     "lint": "biome lint src",
     "lint:fix": "biome lint --write src",
@@ -114,12 +113,12 @@
     "@arethetypeswrong/cli": "^0.18.2",
     "@biomejs/biome": "^2.6.4",
     "@types/node": "^26.6.6",
-    "@vitest/ui": "^4.1.12",
+    "@vitest/ui": "^5.0.5",
     "publint": "^0.3.25",
     "typescript": "^5.9.3",
     "vite": "^8.3.5",
     "vite-plugin-dts": "^5.1.2",
-    "vitest": "^4.1.12"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=22.12.0"

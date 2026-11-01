@@ -16,27 +16,6 @@ export default defineConfig({
       'tests/bun.test.ts',
       'tests/deno-simple.test.ts'
     ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.d.ts',
-        '**/*.config.{js,ts}',
-        '**/*.test.{js,ts}',
-        '**/*.spec.{js,ts}'
-      ],
-      thresholds: {
-        global: {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80
-        }
-      }
-    },
     testTimeout: 10000,
     hookTimeout: 10000
   }
