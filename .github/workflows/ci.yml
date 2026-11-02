@@ -74,6 +74,8 @@ jobs:
         run: |
           rm -rf dist
           ./node_modules/.bin/vite build
+          ./node_modules/.bin/tsc -p tsconfig.build.json
+          node ./scripts/prepare-package-types.mjs
 
   conformance:
     name: Treering Conformance

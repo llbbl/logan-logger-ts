@@ -1,18 +1,19 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import ts from 'typescript';
+import { fileURLToPath } from 'node:url';
+import { transformWithOxc } from 'vite';
 
+// TypeScript 7 ships no JS compiler API, so transpile with vite's Oxc transform.
+// Plain type stripping is not enough: dsl.ts uses a parameter property.
 const directory = new URL('./.built/', import.meta.url);
 await mkdir(directory, { recursive: true });
 for (const [input, output] of [['../conformance/dsl.ts', 'dsl.mjs'], ['engine.ts', 'engine.mjs']]) {
-  const source = await readFile(new URL(input, import.meta.url), 'utf8');
-  const result = ts.transpileModule(source, {
-    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
-    fileName: input,
-    reportDiagnostics: true,
+  const url = new URL(input, import.meta.url);
+  const source = await readFile(url, 'utf8');
+  const result = await transformWithOxc(source, fileURLToPath(url), {
+    target: 'es2020',
+    // Assignment semantics, and no @oxc-project/runtime helper import the runtime images lack.
+    assumptions: { setPublicClassFields: true },
   });
-  if (result.diagnostics?.length) throw new Error(ts.formatDiagnosticsWithColorAndContext(result.diagnostics, {
-    getCurrentDirectory: () => process.cwd(), getCanonicalFileName: name => name, getNewLine: () => '\n',
-  }));
-  const code = result.outputText.replaceAll('../conformance/dsl.ts', './dsl.mjs');
+  const code = result.code.replaceAll('../conformance/dsl.ts', './dsl.mjs');
   await writeFile(new URL(output, directory), code);
 }

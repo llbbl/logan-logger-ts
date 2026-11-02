@@ -9,9 +9,6 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
-      # TypeScript 7 drops the compiler API that vite-plugin-dts (via Volar) needs.
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
     commit-message:

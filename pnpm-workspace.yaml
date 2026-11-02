@@ -8,10 +8,7 @@
 # smuggling); vite pulls esbuild transitively.
 overrides:
   esbuild: '>=0.25.0'
-  # Compatible security fixes in the declaration-generation toolchain.
-  'fast-uri@^3': '^3.1.9'
-  'brace-expansion@^2': '^2.1.7'
-  'brace-expansion@^5': '^5.0.12'
+  # Compatible security fix; postcss (via vite) pulls source-map-js.
   source-map-js: '^1.2.2'
 
 # Supply-chain hardening (pnpm 11 defaults, stated explicitly so they are

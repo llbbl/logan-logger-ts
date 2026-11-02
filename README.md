@@ -45,7 +45,7 @@ aggregator can parse.
 - **Serialization that does not lose your data.** Circular references, `Error`
   objects with their own properties, `BigInt`, `Symbol`, functions and deep
   nesting all survive — as markers where they must, in full where they can.
-- **TypeScript native**, with correct ESM and CJS types on every entry point.
+- **TypeScript native**, with correct ESM and CJS types on every entry point. Consumers need TypeScript 4.5 or newer.
 
 ## Install
 

@@ -83,7 +83,7 @@
     "build": "pnpm build:clean && pnpm build:lib && pnpm build:types",
     "build:clean": "rm -rf dist",
     "build:lib": "vite build",
-    "build:types": "node ./scripts/prepare-package-types.mjs",
+    "build:types": "tsc -p tsconfig.build.json && node ./scripts/prepare-package-types.mjs",
     "dev": "bun run src/index.ts",
     "test": "vitest run --reporter=default",
     "test:package": "node ./scripts/verify-package-consumers.mjs",
@@ -115,9 +115,8 @@
     "@types/node": "^26.6.6",
     "@vitest/ui": "^5.0.5",
     "publint": "^0.3.25",
-    "typescript": "~6.0.3",
+    "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vite-plugin-dts": "^5.1.2",
     "vitest": "^5.0.5"
   },
   "engines": {
