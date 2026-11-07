@@ -7,8 +7,8 @@ export * from './core/types.ts';
 
 // Runtime-specific exports
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
-export * from './utils/config-file.ts';
 export * from './utils/config.ts';
+export * from './utils/config-file.ts';
 export * from './utils/formatting.ts';
 // Utilities
 export * from './utils/runtime.ts';
@@ -35,9 +35,6 @@ export const log = {
   error: (message: string, meta?: any): void => logger.error(message, meta),
 };
 
-// Named exports for explicit imports
-export { createLogger, createLoggerForEnvironment, LogLevel };
-
 // Type-only exports for better tree-shaking
 export type {
   ILogger,
@@ -51,3 +48,5 @@ export type {
   RuntimeName,
   TransportConfig,
 } from './core/types.ts';
+// Named exports for explicit imports
+export { createLogger, createLoggerForEnvironment, LogLevel };

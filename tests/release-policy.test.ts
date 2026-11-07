@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 // The workflow runs dependency-free JavaScript on the supported Node floor.
-// @ts-expect-error Internal build script intentionally has no published declarations.
 import { collectSnapshot, determineRelease, verifyReleaseTag } from '../scripts/release-policy.mjs';
 
 const sha = 'a'.repeat(40);

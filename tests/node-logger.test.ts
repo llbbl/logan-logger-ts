@@ -428,12 +428,14 @@ describe('Node.js Logger', () => {
       });
 
       expect(logger.getTransports()).toHaveLength(0);
-      expect(consoleSpy.mock.calls[0][0]).toContain("logan-logger/node");
+      expect(consoleSpy.mock.calls[0][0]).toContain('logan-logger/node');
     });
 
     it('should share transports with child loggers rather than rebuilding them', () => {
       const shared = recordingTransport();
-      const parent = new NodeLogger({ transports: [{ type: 'custom', options: { transport: shared } }] });
+      const parent = new NodeLogger({
+        transports: [{ type: 'custom', options: { transport: shared } }],
+      });
 
       const child = parent.child({ requestId: 'req-1' }) as NodeLogger;
       const grandchild = child.child({ span: 'a' }) as NodeLogger;
