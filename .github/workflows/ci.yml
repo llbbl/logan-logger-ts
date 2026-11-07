@@ -62,10 +62,13 @@ jobs:
         run: node -v
 
       - name: Run linter
-        run: ./node_modules/.bin/biome lint src
+        run: ./node_modules/.bin/biome ci src tests scripts
 
       - name: Run type check
         run: ./node_modules/.bin/tsc --noEmit
+
+      - name: Run test type check
+        run: ./node_modules/.bin/tsc --noEmit -p tsconfig.test.json
 
       - name: Run tests
         run: ./node_modules/.bin/vitest run --reporter=default
@@ -198,7 +201,7 @@ jobs:
         run: bun test tests/bun.test.ts
 
       - name: Test TypeScript compilation
-        run: bun run typecheck
+        run: ./node_modules/.bin/tsc --noEmit
 
   test-deno:
     name: Test on Deno

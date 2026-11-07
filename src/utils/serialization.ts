@@ -115,8 +115,12 @@ function sanitizeEntries(
  * safeStringify(cyclic); // {"self":"[Circular]"}
  * ```
  */
-// biome-ignore lint/suspicious/noExplicitAny: Serialization utility accepts arbitrary input types
-export function safeStringify(obj: any, space?: number, options: SafeStringifyOptions = {}): string {
+export function safeStringify(
+  // biome-ignore lint/suspicious/noExplicitAny: Serialization utility accepts arbitrary input types
+  obj: any,
+  space?: number,
+  options: SafeStringifyOptions = {}
+): string {
   const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
 
   return JSON.stringify(sanitize(obj, new Set<object>(), 0, maxDepth), null, space);

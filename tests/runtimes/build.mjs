@@ -6,7 +6,10 @@ import { transformWithOxc } from 'vite';
 // Plain type stripping is not enough: dsl.ts uses a parameter property.
 const directory = new URL('./.built/', import.meta.url);
 await mkdir(directory, { recursive: true });
-for (const [input, output] of [['../conformance/dsl.ts', 'dsl.mjs'], ['engine.ts', 'engine.mjs']]) {
+for (const [input, output] of [
+  ['../conformance/dsl.ts', 'dsl.mjs'],
+  ['engine.ts', 'engine.mjs'],
+]) {
   const url = new URL(input, import.meta.url);
   const source = await readFile(url, 'utf8');
   const result = await transformWithOxc(source, fileURLToPath(url), {

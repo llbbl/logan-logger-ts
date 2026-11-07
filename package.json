@@ -90,10 +90,10 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "lint:package": "node ./scripts/validate-package.mjs",
-    "lint": "biome lint src",
-    "lint:fix": "biome lint --write src",
-    "format": "biome format --write src",
-    "typecheck": "tsc --noEmit"
+    "lint": "biome check src tests scripts",
+    "lint:fix": "biome check --write src tests scripts",
+    "format": "biome format --write src tests scripts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "keywords": [
     "logging",

@@ -317,7 +317,9 @@ describe('Browser Logger', () => {
       });
       logger.info('filtered');
       logger.error('retained');
-      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'retained' }));
+      expect(write).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: 'retained' })
+      );
     });
 
     it('keeps healthy destinations when another fails to construct or write', () => {
@@ -342,7 +344,9 @@ describe('Browser Logger', () => {
       });
       logger.info('retained');
 
-      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'retained' }));
+      expect(write).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: 'retained' })
+      );
       expect(warning).toHaveBeenCalledTimes(2);
       expect(warning.mock.calls[0][0]).toContain('failed to initialize');
       expect(warning.mock.calls[1][0]).toContain('failed to write');
@@ -357,7 +361,9 @@ describe('Browser Logger', () => {
         transports: [{ type: 'browser-fixture', options: {} }],
       });
       logger.info('registered');
-      expect(write).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'registered' }));
+      expect(write).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: 'registered' })
+      );
     });
 
     it('applies NO_COLOR to direct construction and per-console options', () => {

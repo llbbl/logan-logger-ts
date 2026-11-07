@@ -1,12 +1,7 @@
 [
   {
     "id": "runtime-output/json-no-styling",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -35,12 +30,7 @@
   },
   {
     "id": "runtime-output/text-timestamp-disabled",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -60,21 +50,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "INFO: bare"
-          ]
+          "args": ["INFO: bare"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/empty-transports",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -95,12 +78,7 @@
   },
   {
     "id": "runtime-output/custom-destination",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -150,12 +128,7 @@
   },
   {
     "id": "runtime-output/child-shares-custom-transport",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -224,12 +197,7 @@
   },
   {
     "id": "runtime-output/console-timestamp-override",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -257,21 +225,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "[2026-08-22T04:15:30.123Z] INFO: override"
-          ]
+          "args": ["[2026-08-22T04:15:30.123Z] INFO: override"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/console-format-override",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -308,12 +269,7 @@
   },
   {
     "id": "runtime-output/console-level-filter",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -345,21 +301,14 @@
       "console": [
         {
           "method": "error",
-          "args": [
-            "ERROR: visible"
-          ]
+          "args": ["ERROR: visible"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/custom-format-text-fallback",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -379,18 +328,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "INFO: fallback"
-          ]
+          "args": ["INFO: fallback"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/browser-css",
-    "runtimes": [
-      "browser"
-    ],
+    "runtimes": ["browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -410,21 +355,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "%cINFO: styled",
-            "color: #007acc; font-weight: normal;"
-          ]
+          "args": ["%cINFO: styled", "color: #007acc; font-weight: normal;"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/terminal-ansi",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno"
-    ],
+    "runtimes": ["node", "bun", "deno"],
     "input": {
       "config": {
         "level": "debug",
@@ -444,21 +382,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "\u001b[32mINFO\u001b[0m: styled"
-          ]
+          "args": ["\u001b[32mINFO\u001b[0m: styled"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/console-color-disabled",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -486,21 +417,14 @@
       "console": [
         {
           "method": "info",
-          "args": [
-            "INFO: plain"
-          ]
+          "args": ["INFO: plain"]
         }
       ]
     }
   },
   {
     "id": "runtime-output/error-explicit-platform-keys",
-    "runtimes": [
-      "node",
-      "bun",
-      "deno",
-      "browser"
-    ],
+    "runtimes": ["node", "bun", "deno", "browser"],
     "input": {
       "config": {
         "level": "debug",
@@ -520,9 +444,7 @@
                   "line": 7,
                   "sourceURL": "caller-supplied.js"
                 },
-                "non_enumerable": [
-                  "line"
-                ]
+                "non_enumerable": ["line"]
               }
             }
           }

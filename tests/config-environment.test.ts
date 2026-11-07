@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createLogger as createBrowserLogger } from '../src/browser.ts';
 import { createLogger, createLoggerForEnvironment } from '../src/core/factory.ts';
 import { type ILogger, type LoggerConfig, LogLevel } from '../src/core/types.ts';
 import { NodeLogger } from '../src/runtime/node.ts';
-import { createLogger as createBrowserLogger } from '../src/browser.ts';
 import { resetEnvironmentWarnings } from '../src/utils/config.ts';
 
 /**
@@ -104,19 +104,19 @@ describe('environment variables reach the logger', () => {
   });
 
   it('should apply LOG_COLOR in both directions', () => {
-    const escape = String.fromCharCode(27);
+    const esc = String.fromCharCode(27);
 
     process.env.LOG_COLOR = 'true';
     let lines = captureConsole();
     createLogger().error('red');
-    expect(lines[0]).toContain(escape);
+    expect(lines[0]).toContain(esc);
 
     vi.restoreAllMocks();
 
     process.env.LOG_COLOR = 'false';
     lines = captureConsole();
     createLogger().error('plain');
-    expect(lines[0]).not.toContain(escape);
+    expect(lines[0]).not.toContain(esc);
   });
 });
 
@@ -134,9 +134,9 @@ describe('precedence', () => {
   it('should honor ignoreEnvironment', () => {
     process.env.LOG_LEVEL = 'debug';
 
-    expect(
-      createLogger({ level: LogLevel.ERROR, ignoreEnvironment: true }).getLevel()
-    ).toBe(LogLevel.ERROR);
+    expect(createLogger({ level: LogLevel.ERROR, ignoreEnvironment: true }).getLevel()).toBe(
+      LogLevel.ERROR
+    );
   });
 
   it('should let LOG_LEVEL override the NODE_ENV-derived level', () => {

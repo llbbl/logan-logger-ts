@@ -8,12 +8,20 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "**",
+      "src/**",
+      "tests/**",
+      "scripts/**",
+      "*.ts",
+      "*.mjs",
+      "*.json",
       "!**/dist",
       "!**/node_modules",
       "!**/*.config.js",
       "!**/*.config.ts",
-      "!**/pnpm-lock.yaml"
+      "!deno.json",
+      "!**/*.md",
+      "!**/*.yaml",
+      "!**/*.yml"
     ]
   },
   "formatter": {

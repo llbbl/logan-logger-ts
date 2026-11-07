@@ -4,10 +4,7 @@
 # keys in .npmrc — every setting below used to live in package.json#pnpm.
 
 # Moved from package.json#pnpm.overrides.
-# esbuild <0.25.0 is vulnerable to GHSA-67mh-4wv8-2f99 (dev server request
-# smuggling); vite pulls esbuild transitively.
 overrides:
-  esbuild: '>=0.25.0'
   # Compatible security fix; postcss (via vite) pulls source-map-js.
   source-map-js: '^1.2.2'
 
@@ -20,7 +17,4 @@ verifyDepsBeforeRun: install # re-check the lockfile before `pnpm run`
 
 # Postinstall allowlist. Empty map blocks all build scripts; entries are added
 # only after checking what the script actually does.
-allowBuilds:
-  # esbuild's postinstall links the platform-specific binary it ships as an
-  # optional dependency. Required for vite to run. Pulled in transitively.
-  esbuild: true
+allowBuilds: {}

@@ -21,8 +21,8 @@ for a dual ESM/CJS package, so the floor is not raised to suit pnpm.
 pnpm test              # vitest, single run
 pnpm test:watch        # watch mode
 
-pnpm typecheck         # tsc --noEmit
-pnpm lint              # biome
+pnpm typecheck         # src on the ES2020 lib, then tests via tsconfig.test.json
+pnpm lint              # biome lint, format and import order on src, tests, scripts
 pnpm lint:fix
 
 deno task check        # type check all five entry points under Deno

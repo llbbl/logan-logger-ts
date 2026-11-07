@@ -1,9 +1,6 @@
 // Browser-specific exports
 // Import this module when running in browser environments
 
-// Re-export core types (no implementations that could pull in Node.js deps)
-export type { ILogger, LoggerConfig, TransportConfig } from './core/types.ts';
-export { LogLevel } from './core/types.ts';
 export {
   ConsoleTransport,
   createTransports,
@@ -13,6 +10,9 @@ export {
   type TransportContext,
   type TransportFactory,
 } from './core/transport.ts';
+// Re-export core types (no implementations that could pull in Node.js deps)
+export type { ILogger, LoggerConfig, TransportConfig } from './core/types.ts';
+export { LogLevel } from './core/types.ts';
 export { BrowserLogger, ConsoleGroupLogger, PerformanceLogger } from './runtime/browser.ts';
 export * from './utils/formatting.ts';
 // Browser-safe utilities (no Node.js dependencies)

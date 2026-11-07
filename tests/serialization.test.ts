@@ -354,7 +354,7 @@ describe('Serialization Utilities', () => {
       // The companion guard to the one above, for the callers this hole hit:
       // every pair here was redacted by the old substring rule and must stay
       // redacted. Multi-token keys are the whole point — see #61.
-      const pairs: Array<[key: string, fieldName: string]> = [
+      const pairs: [key: string, fieldName: string][] = [
         ['apiKey', 'apiKey'],
         ['apiKey', 'apikey'],
         ['apiKey', 'api_key'],
@@ -568,11 +568,7 @@ describe('Serialization Utilities', () => {
       error.zzz = 1;
       error.aaa = 2;
 
-      expect(Object.keys(serializeError(error)).slice(0, 3)).toEqual([
-        'name',
-        'message',
-        'stack',
-      ]);
+      expect(Object.keys(serializeError(error)).slice(0, 3)).toEqual(['name', 'message', 'stack']);
     });
 
     it('should omit stack entirely when it is undefined', () => {
@@ -614,21 +610,24 @@ describe('Serialization Utilities', () => {
       expect(JSON.parse(safeStringify({ error })).error[property]).toBe('[Throws]');
     });
 
-    it.each(['name', 'message', 'stack'])('guards an inherited %s getter that throws', (property) => {
-      const error = new Error('hostile');
-      error.stack = 'STACK';
-      const prototype = Object.create(Error.prototype);
-      Object.defineProperty(prototype, property, {
-        get() {
-          throw new Error('inherited getter blew up');
-        },
-      });
-      Object.setPrototypeOf(error, prototype);
-      Reflect.deleteProperty(error, property);
+    it.each(['name', 'message', 'stack'])(
+      'guards an inherited %s getter that throws',
+      (property) => {
+        const error = new Error('hostile');
+        error.stack = 'STACK';
+        const prototype = Object.create(Error.prototype);
+        Object.defineProperty(prototype, property, {
+          get() {
+            throw new Error('inherited getter blew up');
+          },
+        });
+        Object.setPrototypeOf(error, prototype);
+        Reflect.deleteProperty(error, property);
 
-      expect(serializeError(error)[property]).toBe('[Throws]');
-      expect(JSON.parse(safeStringify(error))[property]).toBe('[Throws]');
-    });
+        expect(serializeError(error)[property]).toBe('[Throws]');
+        expect(JSON.parse(safeStringify(error))[property]).toBe('[Throws]');
+      }
+    );
 
     it('reads each core getter only once per serialization', () => {
       const error = new Error('read once');

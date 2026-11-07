@@ -1,5 +1,5 @@
-import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, firefox, webkit } from 'playwright';
@@ -10,7 +10,8 @@ const payload = await loadRuntimeFixtures(options.fixtures ?? process.env.TREERI
 const root = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const engines = { chromium, firefox, webkit };
 const selected = options.browser ? [options.browser] : Object.keys(engines);
-if (selected.some(name => !engines[name])) throw new Error('--browser must be chromium, firefox, or webkit');
+if (selected.some((name) => !engines[name]))
+  throw new Error('--browser must be chromium, firefox, or webkit');
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
@@ -26,9 +27,14 @@ const server = createServer(async (request, response) => {
     }
     response.setHeader('content-type', 'text/javascript');
     response.end(await readFile(filename));
-  } catch { response.writeHead(404).end(); }
+  } catch {
+    response.writeHead(404).end();
+  }
 });
-await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+await new Promise((resolve, reject) => {
+  server.once('error', reject);
+  server.listen(0, '127.0.0.1', resolve);
+});
 const origin = `http://127.0.0.1:${server.address().port}`;
 let failed = false;
 try {
@@ -38,20 +44,39 @@ try {
       browser = await engines[name].launch({ headless: true });
       const page = await browser.newPage();
       const errors = [];
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', (error) => errors.push(error.message));
       await page.goto(origin);
-      const results = await page.evaluate(async ({ cases, outputs }) => {
-        const [library, engine] = await Promise.all([import('/dist/browser.mjs'), import('/tests/runtimes/.built/engine.mjs')]);
-        if (typeof window === 'undefined' || typeof document === 'undefined' || typeof process !== 'undefined') throw new Error('Expected real browser without Node globals');
-        return engine.runFixtures(library, 'browser', cases, outputs);
-      }, { cases: payload.cases, outputs: payload.outputs });
+      const results = await page.evaluate(
+        async ({ cases, outputs }) => {
+          const [library, engine] = await Promise.all([
+            import('/dist/browser.mjs'),
+            import('/tests/runtimes/.built/engine.mjs'),
+          ]);
+          if (
+            typeof window === 'undefined' ||
+            typeof document === 'undefined' ||
+            typeof process !== 'undefined'
+          )
+            throw new Error('Expected real browser without Node globals');
+          return engine.runFixtures(library, 'browser', cases, outputs);
+        },
+        { cases: payload.cases, outputs: payload.outputs }
+      );
       console.log(`[runtime] ${name} ${browser.version()}; public entry /dist/browser.mjs`);
       if (!printReport(name, payload, results) || errors.length) failed = true;
       for (const error of errors) console.error(`[${name}] pageerror: ${error}`);
     } catch (error) {
       failed = true;
-      console.error(`[${name}] runtime failure: ${error instanceof Error ? error.stack : String(error)}`);
-    } finally { await browser?.close(); }
+      console.error(
+        `[${name}] runtime failure: ${error instanceof Error ? error.stack : String(error)}`
+      );
+    } finally {
+      await browser?.close();
+    }
   }
-} finally { await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+} finally {
+  await new Promise((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve()))
+  );
+}
 if (failed) process.exitCode = 1;

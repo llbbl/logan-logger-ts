@@ -222,7 +222,9 @@ export class Dsl {
     for (const property of Object.getOwnPropertyNames(error)) {
       if (!['name', 'message', 'stack'].includes(property)) {
         if (!Reflect.deleteProperty(error, property)) {
-          throw new Error(`Cannot materialize canonical fixture Error: '${property}' is not configurable`);
+          throw new Error(
+            `Cannot materialize canonical fixture Error: '${property}' is not configurable`
+          );
         }
       }
     }
